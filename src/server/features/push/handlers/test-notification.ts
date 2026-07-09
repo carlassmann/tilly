@@ -8,10 +8,12 @@ import { sendTestNotification } from "../operations/send-test-notification"
 export { testNotificationApp }
 
 let testNotificationApp = new Hono()
-	.use("*", requireServerWorker)
-	.use("*", requireJazzAuth)
+	// Middleware must stay scoped to the route: apps sharing a mount path in
+	// main.ts would otherwise run each other's `use("*")` middleware.
 	.post(
 		"/send-test-notification",
+		requireServerWorker,
+		requireJazzAuth,
 		zValidator("json", z.object({ endpoint: z.string() })),
 		async c => {
 			let serverWorker = c.get("serverWorker")

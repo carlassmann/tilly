@@ -18,6 +18,14 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
+			"astro:env/server": new URL(
+				"./test-stubs/astro-env-server.ts",
+				import.meta.url,
+			).pathname,
+			"astro:env/client": new URL(
+				"./test-stubs/astro-env-client.ts",
+				import.meta.url,
+			).pathname,
 			"#app": new URL("./src/app", import.meta.url).pathname,
 			"#server": new URL("./src/server", import.meta.url).pathname,
 			"#shared": new URL("./src/shared", import.meta.url).pathname,

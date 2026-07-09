@@ -8,10 +8,12 @@ import { deliverNotifications } from "../operations/deliver-notifications"
 export { cronDeliveryApp }
 
 let cronDeliveryApp = new Hono()
-	.use("*", requireServerWorker)
+	// Middleware must stay scoped to the route: apps sharing a mount path in
+	// main.ts would otherwise run each other's `use("*")` middleware.
 	.get(
 		"/deliver-notifications",
 		bearerAuth({ token: CRON_SECRET }),
+		requireServerWorker,
 		async c => {
 			let worker = c.get("serverWorker")
 			let result = await deliverNotifications(worker)

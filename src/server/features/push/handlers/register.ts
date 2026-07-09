@@ -8,10 +8,12 @@ import { registerNotificationSettingsWithServer } from "../operations/register-s
 export { pushRegisterApp }
 
 let pushRegisterApp = new Hono()
-	.use("*", requireServerWorker)
-	.use("*", requireJazzAuth)
+	// Middleware must stay scoped to the route: apps sharing a mount path in
+	// main.ts would otherwise run each other's `use("*")` middleware.
 	.post(
 		"/register",
+		requireServerWorker,
+		requireJazzAuth,
 		zValidator(
 			"json",
 			z.object({

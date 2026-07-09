@@ -3,6 +3,6 @@
 	"compilerOptions": {
 		"noEmit": true
 	},
-	"include": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+	"include": [".astro/types.d.ts", "src/**/*.test.ts", "src/**/*.test.tsx"],
 	"exclude": ["node_modules", "dist"]
 }
