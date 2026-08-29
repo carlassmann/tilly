@@ -48,7 +48,7 @@ Tilly ist ein einzelnes Astro-Projekt mit allem an einem Ort, was es einfach mac
 
 ### 1. Repository forken
 
-Gehe zu [github.com/ccssmnn/tilly](https://github.com/ccssmnn/tilly) und forke das Repository zu deinem Account.
+Gehe zu [github.com/carlassmann/tilly](https://github.com/carlassmann/tilly) und forke das Repository zu deinem Account.
 
 ### 2. Clerk einrichten
 
@@ -104,4 +104,4 @@ Schau dir die `vercel.json`-Datei im Repository an, um die aktuelle Konfiguratio
 
 Das war's! Du hast jetzt deine eigene Tilly-Instanz mit voller Kontrolle über deine Daten. Das gesamte Setup dauert vielleicht 30 Minuten, und du kannst deine Daten jederzeit zwischen Instanzen verschieben per JSON-Export/Import.
 
-Tilly selbst zu hosten ist wirklich einfach, und ich möchte es so halten. Falls du auf Probleme stößt, öffne ein Issue auf [GitHub](https://github.com/ccssmnn/tilly). Ich helfe gerne weiter.
+Tilly selbst zu hosten ist wirklich einfach, und ich möchte es so halten. Falls du auf Probleme stößt, öffne ein Issue auf [GitHub](https://github.com/carlassmann/tilly). Ich helfe gerne weiter.

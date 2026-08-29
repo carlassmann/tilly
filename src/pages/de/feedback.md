@@ -13,6 +13,6 @@ Ich würde gerne von dir hören! Ob du einen Fehler gefunden hast, eine Funktion
 
 **E-Mail:** [assmann@hey.com](mailto:assmann@hey.com)
 
-**GitHub:** [Ein Issue erstellen](https://github.com/ccssmnn/tilly/issues)
+**GitHub:** [Ein Issue erstellen](https://github.com/carlassmann/tilly/issues)
 
-**X (Twitter):** [@ccssmnn](https://x.com/ccssmnn)
+**X (Twitter):** [@carlassmann](https://x.com/carlassmann)

@@ -50,7 +50,7 @@ function AboutSection({ me }: { me: SettingsAccount }) {
 					<T k="settings.about.privacy" />
 				</a>
 				<a
-					href="https://github.com/anomalyco/tilly"
+					href="https://github.com/carlassmann/tilly"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-muted-foreground hover:text-foreground flex items-center gap-3 text-sm transition-colors"

@@ -48,7 +48,7 @@ Tilly is a single Astro project with everything in one place, making it easy to 
 
 ### 1. Fork the Repository
 
-Go to [github.com/ccssmnn/tilly](https://github.com/ccssmnn/tilly) and fork the repository to your account.
+Go to [github.com/carlassmann/tilly](https://github.com/carlassmann/tilly) and fork the repository to your account.
 
 ### 2. Set Up Clerk
 
@@ -104,4 +104,4 @@ Check the `vercel.json` file in the repository to see the current configuration 
 
 That's it! You now have your own Tilly instance with full control over your data. The entire setup takes maybe 30 minutes, and you can always move your data between instances using JSON export/import.
 
-Self-hosting Tilly is genuinely easy, and I want to keep it that way. If you run into issues, open an issue on [GitHub](https://github.com/ccssmnn/tilly). I'm happy to help.
+Self-hosting Tilly is genuinely easy, and I want to keep it that way. If you run into issues, open an issue on [GitHub](https://github.com/carlassmann/tilly). I'm happy to help.

@@ -13,6 +13,6 @@ I would love to hear from you! Whether you found a bug, have a feature request, 
 
 **Email:** [assmann@hey.com](mailto:assmann@hey.com)
 
-**GitHub:** [File an issue](https://github.com/ccssmnn/tilly/issues)
+**GitHub:** [File an issue](https://github.com/carlassmann/tilly/issues)
 
-**X (Twitter):** [@ccssmnn](https://x.com/ccssmnn)
+**X (Twitter):** [@carlassmann](https://x.com/carlassmann)
