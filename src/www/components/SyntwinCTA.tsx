@@ -1,4 +1,7 @@
-import { PUBLIC_SYNTWIN_ROOM_ID } from "astro:env/client"
+import {
+	PUBLIC_SYNTWIN_ENABLED,
+	PUBLIC_SYNTWIN_ROOM_ID,
+} from "astro:env/client"
 import { ArrowRight } from "react-bootstrap-icons"
 
 export { SyntwinCTA }
@@ -11,7 +14,7 @@ interface SyntwinCTAProps {
 }
 
 function SyntwinCTA({ title, description, creator, action }: SyntwinCTAProps) {
-	if (!PUBLIC_SYNTWIN_ROOM_ID) return null
+	if (!PUBLIC_SYNTWIN_ENABLED || !PUBLIC_SYNTWIN_ROOM_ID) return null
 
 	return (
 		<div className="container mx-auto px-6 md:px-8">

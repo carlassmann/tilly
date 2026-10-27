@@ -1,4 +1,7 @@
-import { PUBLIC_SYNTWIN_ROOM_ID } from "astro:env/client"
+import {
+	PUBLIC_SYNTWIN_ENABLED,
+	PUBLIC_SYNTWIN_ROOM_ID,
+} from "astro:env/client"
 import { Button, buttonVariants } from "#shared/ui/button"
 import { T, useIntl } from "#shared/intl/setup"
 import { SettingsSection } from "#app/features/settings/parts/settings-section"
@@ -10,7 +13,7 @@ function HelpSection() {
 	let t = useIntl()
 	let isOnline = useOnlineStatus()
 
-	if (!PUBLIC_SYNTWIN_ROOM_ID) return null
+	if (!PUBLIC_SYNTWIN_ENABLED || !PUBLIC_SYNTWIN_ROOM_ID) return null
 
 	return (
 		<SettingsSection

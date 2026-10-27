@@ -44,11 +44,13 @@ Email: assmann@hey.com
 
 Carl's AI twin can explain Tilly and guide you through the website and app. This optional guide is separate from Tilly Agent.
 
-- Messages you send to the guide are processed and stored in Syntwin. Calls are transcribed.
+- Loading a page with the guide contacts Syntwin to fetch its script and room settings, before you start a conversation. Syntwin receives connection information such as your IP address and the website origin.
+- Messages you send to the guide are processed and stored in Syntwin. Calls are transcribed. Carl can review conversations, including feedback you leave there.
 - The guide asks permission before reading or acting on the page. If you allow it, visible page content, including journal details on that page, can be sent to Syntwin for guidance. You can revoke page access in the guide.
-- Tilly's account controls are excluded from page access. Password and payment-card fields are excluded by the embed.
+- Settings account controls are excluded from page access. Password and payment-card fields are excluded by the embed.
 - The guide stores its conversation state and page-access choice in this browser tab's session storage so it can continue between Tilly pages.
 - Tilly's journal encryption does not hide page contents you share with the guide. You can use fictional details for a walkthrough.
+- Syntwin's privacy notice: https://my.syntwin.ai/legal/privacy
 
 ### Clerk (Authentication)
 
@@ -81,6 +83,8 @@ Carl's AI twin can explain Tilly and guide you through the website and app. This
 - Data is stored until you delete your account
 - Account deletion removes all data and encryption keys
 - Backups are automatically deleted within 30 days
+
+Guide conversations are stored separately in Syntwin. Deleting your Tilly account does not automatically delete those conversations. Contact assmann@hey.com about deleting guide conversations.
 
 ## Your Rights (GDPR)
 

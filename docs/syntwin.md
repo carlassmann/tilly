@@ -1,6 +1,6 @@
 # Carl's Tilly guide
 
-The website and app load Carl's live Syntwin through `src/shared/ui/syntwin-embed.astro`. The script stays outside the React router, so app navigation preserves the conversation. Syntwin restores the conversation across full page loads on the same origin.
+The website loads Carl's live Syntwin through `src/shared/ui/syntwin-embed.astro`. The app loads it through `src/app/components/syntwin-guide.tsx` once the account locale is known. The script stays outside the React router, so app navigation preserves the conversation. Syntwin restores the conversation across full page loads on the same origin.
 
 The website shows the room's launcher. The app keeps an open conversation from the website, but shows no floating launcher when the guide is closed. Open it through **Settings → Help → Talk to Carl's AI twin**. The app uses `data-launcher="none"` and Syntwin's `data-syntwin-open-state` to show only the open conversation. The Settings button uses the embed's `data-syntwin-open` trigger.
 
@@ -8,7 +8,7 @@ The website shows the room's launcher. The app keeps an open conversation from t
 - Room settings: https://my.syntwin.ai/app/deploy/j97dc3ekdfj0hffadfwwqb19w98h3q3m?settings=omny
 - Script: https://my.syntwin.ai/omny.js
 
-`PUBLIC_SYNTWIN_ROOM_ID` defaults to this room. Set it to another room for your own deployment, or an empty string to disable the guide. No Syntwin secret belongs in Tilly. Launcher appearance, channels and page permissions come from the room's Omny settings.
+`PUBLIC_SYNTWIN_ROOM_ID` defaults to this room. Set it to another room for your own deployment. Set `PUBLIC_SYNTWIN_ENABLED=false` to disable the script, website CTA and Settings Help section. An empty room ID is not an off switch: Astro treats empty environment variables as unset and restores the default. No Syntwin secret belongs in Tilly. Launcher appearance, channels and page permissions come from the room's Omny settings.
 
 ## Room setup
 

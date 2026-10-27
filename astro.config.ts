@@ -127,6 +127,11 @@ export default defineConfig({
 				access: "public",
 				optional: true,
 			}),
+			PUBLIC_SYNTWIN_ENABLED: envField.boolean({
+				context: "client",
+				access: "public",
+				default: true,
+			}),
 			PUBLIC_SYNTWIN_ROOM_ID: envField.string({
 				context: "client",
 				access: "public",
