@@ -60,10 +60,14 @@ function Navbar({ logo, navigation, cta, locale, languages }: NavbarProps) {
 					</a>
 					<div className="hidden md:flex md:items-center md:gap-x-6">
 						{navigation.map(item => (
-							<Button key={item.name} variant="ghost" size="sm">
-								<a href={item.href} target="_self">
-									{item.name}
-								</a>
+							<Button
+								key={item.name}
+								variant="ghost"
+								size="sm"
+								nativeButton={false}
+								render={<a href={item.href} />}
+							>
+								{item.name}
 							</Button>
 						))}
 						{languages && (
@@ -118,8 +122,8 @@ function Navbar({ logo, navigation, cta, locale, languages }: NavbarProps) {
 								</DropdownMenuContent>
 							</DropdownMenu>
 						)}
-						<Button>
-							<a href={cta.href}>{cta.text}</a>
+						<Button nativeButton={false} render={<a href={cta.href} />}>
+							{cta.text}
 						</Button>
 						<Button
 							variant="ghost"
@@ -141,10 +145,13 @@ function Navbar({ logo, navigation, cta, locale, languages }: NavbarProps) {
 						</DialogHeader>
 						<div className="flex flex-col gap-3">
 							{navigation.map(item => (
-								<Button key={item.name} variant="outline">
-									<a href={item.href} target="_self">
-										{item.name}
-									</a>
+								<Button
+									key={item.name}
+									variant="outline"
+									nativeButton={false}
+									render={<a href={item.href} />}
+								>
+									{item.name}
 								</Button>
 							))}
 						</div>

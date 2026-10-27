@@ -38,23 +38,28 @@ function Hero({
 				{badge && (
 					<div className="inline-flex gap-3">
 						<Badge variant="outline">{badge.text}</Badge>
-						<Button variant="ghost" size="sm">
-							<a href={badge.href}>
-								{badge.description} <span aria-hidden="true">→</span>
-							</a>
+						<Button
+							variant="ghost"
+							size="sm"
+							nativeButton={false}
+							render={<a href={badge.href} />}
+						>
+							{badge.description} <span aria-hidden="true">→</span>
 						</Button>
 					</div>
 				)}
 				<TypographyH1>{title}</TypographyH1>
 				<TypographyLead>{description}</TypographyLead>
-				<div className="inline-flex gap-3">
-					<Button>
-						<a href={primaryCta.href}>{primaryCta.text}</a>
+				<div className="inline-flex gap-3" data-syntwin-avoid="0px">
+					<Button nativeButton={false} render={<a href={primaryCta.href} />}>
+						{primaryCta.text}
 					</Button>
-					<Button variant="ghost">
-						<a href={secondaryCta.href}>
-							{secondaryCta.text} <span aria-hidden="true">→</span>
-						</a>
+					<Button
+						variant="ghost"
+						nativeButton={false}
+						render={<a href={secondaryCta.href} />}
+					>
+						{secondaryCta.text} <span aria-hidden="true">→</span>
 					</Button>
 				</div>
 			</div>

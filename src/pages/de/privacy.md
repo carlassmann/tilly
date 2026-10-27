@@ -7,7 +7,7 @@ locale: "de"
 
 # Datenschutzerklärung
 
-_Stand: 1. September 2025_
+_Stand: 27. Oktober 2026_
 
 ## Verantwortlicher
 
@@ -39,6 +39,16 @@ E-Mail: assmann@hey.com
 - Tilly speichert deine Zahlungskartendaten nicht
 
 ## Drittanbieter-Dienste
+
+### Syntwin-Websitebegleiter
+
+Carls KI-Zwilling kann Tilly erklären und durch die Website und App führen. Dieser optionale Begleiter ist unabhängig vom Tilly Agent.
+
+- Nachrichten an den Begleiter werden in Syntwin verarbeitet und gespeichert. Anrufe werden transkribiert.
+- Der Begleiter fragt um Erlaubnis, bevor er die Seite liest oder bedient. Mit deiner Zustimmung können sichtbare Seiteninhalte einschließlich angezeigter Journaldetails zur Hilfestellung an Syntwin übermittelt werden. Den Seitenzugriff kannst du im Begleiter widerrufen.
+- Tillys Kontosteuerung ist vom Seitenzugriff ausgeschlossen. Passwort- und Kreditkartenfelder schließt die Einbettung aus.
+- Gesprächsstatus und Zugriffsentscheidung werden im Sitzungsspeicher dieses Browsertabs gespeichert, damit das Gespräch beim Seitenwechsel weitergeht.
+- Tillys Journalverschlüsselung verbirgt keine Seiteninhalte, die du mit dem Begleiter teilst. Für eine Einführung kannst du erfundene Beispiele verwenden.
 
 ### Clerk (Authentifizierung)
 

@@ -7,7 +7,7 @@ locale: "en"
 
 # Privacy Policy
 
-_Last updated: September 1, 2025_
+_Last updated: October 27, 2026_
 
 ## Controller
 
@@ -39,6 +39,16 @@ Email: assmann@hey.com
 - Tilly does not store your payment card details
 
 ## Third-Party Services
+
+### Syntwin website guide
+
+Carl's AI twin can explain Tilly and guide you through the website and app. This optional guide is separate from Tilly Agent.
+
+- Messages you send to the guide are processed and stored in Syntwin. Calls are transcribed.
+- The guide asks permission before reading or acting on the page. If you allow it, visible page content, including journal details on that page, can be sent to Syntwin for guidance. You can revoke page access in the guide.
+- Tilly's account controls are excluded from page access. Password and payment-card fields are excluded by the embed.
+- The guide stores its conversation state and page-access choice in this browser tab's session storage so it can continue between Tilly pages.
+- Tilly's journal encryption does not hide page contents you share with the guide. You can use fictional details for a walkthrough.
 
 ### Clerk (Authentication)
 

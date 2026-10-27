@@ -1,0 +1,21 @@
+---
+import { PUBLIC_SYNTWIN_ROOM_ID } from "astro:env/client"
+
+interface Props {
+	launcher?: "none"
+}
+
+let { launcher } = Astro.props
+---
+
+{
+	PUBLIC_SYNTWIN_ROOM_ID && (
+		<script
+			is:inline
+			async
+			src="https://my.syntwin.ai/omny.js"
+			data-room={PUBLIC_SYNTWIN_ROOM_ID}
+			data-launcher={launcher}
+		/>
+	)
+}

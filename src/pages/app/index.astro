@@ -1,5 +1,6 @@
 ---
 import { PWA } from "#app/main"
+import SyntwinEmbed from "#shared/ui/syntwin-embed.astro"
 import "#app/index.css"
 import { SplashScreen } from "#app/components/splash-screen"
 import { PUBLIC_PLAUSIBLE_DOMAIN } from "astro:env/client"
@@ -20,7 +21,7 @@ let metaDescription =
 ---
 
 <!doctype html>
-<html lang="en" class="min-h-dvh overscroll-y-none bg-background">
+<html lang="en" class="bg-background min-h-dvh overscroll-y-none">
 	<head>
 		<title>{pageTitle}</title>
 		<meta name="description" content={metaDescription} />
@@ -61,18 +62,22 @@ let metaDescription =
 				/>
 			)
 		}
-
 	</head>
 	<body
-		class="selection:bg-primary selection:text-primary-foreground select-none bg-background text-foreground *:border-border overscroll-y-none"
+		class="selection:bg-primary selection:text-primary-foreground bg-background text-foreground *:border-border overscroll-y-none select-none"
 	>
-		<div id="splash" class="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background">
+		<div
+			id="splash"
+			aria-busy="true"
+			class="bg-background flex min-h-dvh flex-col items-center justify-center gap-4"
+		>
 			<img src="/app/icons/icon-192x192.png" class="size-24 rounded-lg" />
 			<span class="text-4xl font-bold tracking-tight">Tilly</span>
 		</div>
 		<PWA client:only="react">
 			<SplashScreen slot="fallback" />
 		</PWA>
+		<SyntwinEmbed launcher="none" />
 		<script>
 			let redirectPath = new URL(window.location.href).searchParams.get(
 				"__app_redirect",
@@ -95,3 +100,9 @@ let metaDescription =
 		</script>
 	</body>
 </html>
+
+<style is:global>
+	html:not([data-syntwin-open-state="open"]) syntwin-twin {
+		display: none;
+	}
+</style>
