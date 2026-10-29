@@ -104,3 +104,9 @@ The prepared Syntwin correction passes `bun run check`, all 5,301 tests, and 9 t
 Syntwin caches the assembled prompt in a session. Updated room instructions require a fresh conversation for a reliable retest; closing/reopening the panel keeps the existing session. Use a separate browser tab for fresh QA rather than clearing Tilly's site data, which could erase anonymous journal entries.
 
 written with gpt-6.1-sol in Codex
+
+### Visible actions need no narration
+
+The next owner test, `jx7b66gyj5394bpbz6axvnd7k18h65ab`, still announced highlighting the "Simple. Practical." section. The room now explicitly forbids describing visible highlights, scrolls, clicks, opened sections and typing in chat, voice and video. It should explain the product while using these visual aids. A blocker or necessary consent choice may still need explanation. Removed the conflicting announcement example from the pending Syntwin visitor prompt and strengthened its call guidance. These upstream edits remain local. Fresh remote session `jx7fw8paqkjr3r45jj50n54ryd8h60ba` highlighted the how-it-works section and explained the product without announcing the highlight. It still said "I'll read the page now" before the page read, so narration is not fully resolved on the deployed backend.
+
+written with gpt-6.1-sol in Codex
