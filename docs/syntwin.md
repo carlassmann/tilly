@@ -128,3 +128,11 @@ The upstream candidate passes format/check, all 5,306 tests, 15 targeted website
 A dev deployment attempt compiled but was rejected because existing deployment rows contain legacy fields absent from the current schema. No data was removed to bypass validation, and the production backend was not deployed. Resolve that environment's schema drift or use an isolated deployment before the upstream runtime signoff.
 
 written with gpt-6.1-sol in Codex
+
+### Personal introduction and invitation
+
+Updated the live room after Carl's Josua kitchen example. A greeting now starts with his reason for building Tilly, followed by one personal question. Once a concrete situation establishes a useful fit, the twin connects Tilly to it and invites a walkthrough. It gathers any remaining setup details after acceptance, before entering the app, without asking for a second setup confirmation.
+
+Remote preview session `jx74xfg5ma292kxzz58qdneq8x8h7mjr` opened with Carl's motivation, asked about Josua, then offered to help remember his kitchen renovation. After acceptance it asked about Monday as a follow-up date. German preview `jx70a73ck1x9zhadr0by7mhxan8h7dr9` used the German introduction and respected a refusal of the tour. Both QA conversations were ended. These were connector chat checks; no browser navigation or journal changes were exercised.
+
+written with gpt-6.1-sol in Codex
