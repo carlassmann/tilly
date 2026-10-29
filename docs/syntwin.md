@@ -122,3 +122,9 @@ Fresh remote session `jx7c2rhctr4mbf2fdpn4rshccs8h68pd` in local Tilly asked who
 The reported disappearance of all call UI was not reproduced in these Chromium trials. The call controls remained visible through the twin's actual navigation into `/app` and `/app/people` at 390×844. A separate direct website-to-app handoff on the protected Vercel preview also retained the session and showed call controls at 390×844; later it returned to chat while idle. Desktop 1440×900 showed the conversation. These are not iOS Safari reproductions, and no Tilly UI fix is claimed.
 
 written with gpt-6.1-sol in Codex
+
+The upstream candidate passes format/check, all 5,306 tests, 15 targeted website-guide trials and 6 existing unsupported-action trials. Earlier trials exposed refusals to request page access for an accepted setup; the candidate now distinguishes an available action from an already-completed one and explains that page controls can perform the website's supported actions. Unsupported completion/handoff claims remain prohibited. This is bounded evaluation evidence, not a guarantee of model behavior.
+
+A dev deployment attempt compiled but was rejected because existing deployment rows contain legacy fields absent from the current schema. No data was removed to bypass validation, and the production backend was not deployed. Resolve that environment's schema drift or use an isolated deployment before the upstream runtime signoff.
+
+written with gpt-6.1-sol in Codex
