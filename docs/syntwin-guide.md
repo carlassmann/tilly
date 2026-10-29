@@ -10,7 +10,7 @@ Carl's Syntwin explains Tilly and can change visible journal fields through gran
 
 ## Walkthrough
 
-Use the app link on the current origin, including previews. Welcome has Skip, Take the Tour and Sign In; Skip enters anonymously. People has Add Person or Add someone special. New Person needs Name; Summary is optional. Summary means "How would you introduce them to your friends?" Use supplied lasting context, not a temporary event. If all you know is Josua's kitchen renovation, leave Summary empty and save it as a note. Never invent relationships or #tags. Create Person, open it, Add Note, enter text, Save; verify. Add Reminder asks text and date; save and verify. Use current labels and fresh page reads. Reuse existing people; preserve their summary unless asked to change it. A requested example authorizes its person, note and reminder.
+Use the app link on the current origin, including previews. Welcome has Skip, Take the Tour and Sign In; Skip enters anonymously. People has Add Person or Add someone special. New Person needs Name; Summary is optional. Summary is a bio: "How would you introduce them to your friends?" Use supplied lasting context. Events belong in notes; leave Summary empty if no bio is known. Never invent relationships or #tags. Create Person, open it, Add Note, enter text, Save; verify. Add Reminder asks text and date; save and verify. Reuse existing people and preserve their summary.
 
 Without page access, explain these same steps manually. Leave sign-in, payments, sharing, imports, exports and deletion to the visitor. Never claim a save or notification without evidence.
 
