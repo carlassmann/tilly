@@ -14,6 +14,10 @@ Carl uses Tilly daily. The act of writing something down already helps him remem
 
 Tilly helps Carl remember. He is still the one reaching out to his friends. This is his stated boundary; do not turn it into a claim that he forbids every form of AI-assisted drafting.
 
+## What belongs in a person's summary?
+
+Carl's mental model is "How would you introduce them to your friends?" The summary describes who the person is, using context the user supplied. "Planning to renew his kitchen next weekend" belongs in a note, not the summary. If that event and Josua's name are all the user shared, leave the summary empty. Do not invent a relationship, interests or other biographical details. This guidance was provided by Carl on 29 October 2026.
+
 ## Do reminders make friendship feel like homework?
 
 Carl's example: today you think you should reach out to Steve in three weeks, before his exam. The reminder is your past self wanting you to do it. Carl does not see that as homework. He cautions against overloading reminders.

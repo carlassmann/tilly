@@ -136,3 +136,11 @@ Updated the live room after Carl's Josua kitchen example. A greeting now starts 
 Remote preview session `jx74xfg5ma292kxzz58qdneq8x8h7mjr` opened with Carl's motivation, asked about Josua, then offered to help remember his kitchen renovation. After acceptance it asked about Monday as a follow-up date. German preview `jx70a73ck1x9zhadr0by7mhxan8h7dr9` used the German introduction and respected a refusal of the tour. Both QA conversations were ended. These were connector chat checks; no browser navigation or journal changes were exercised.
 
 written with gpt-6.1-sol in Codex
+
+### Person summaries describe the person
+
+Carl clarified that a summary answers "How would you introduce them to your friends?" Updated the live room, walkthrough source and personal-view source. Temporary events belong in notes; summary stays empty when no lasting context is supplied. Existing summaries remain unchanged unless the user asks. The form schema confirms summary is optional. The walkthrough source remains below 4,000 characters.
+
+English preview `jx79vdmz5n1n13j58vf0zy29198h6k1s` kept Josua's summary empty when only the renovation was known, then preserved an existing colleague/cooking summary when asked whether to replace it. German preview `jx7f231rfv8330e04s5jv33vrs8h7ad5` separated colleague/cooking context from the renovation note. Both QA conversations were ended. These checks tested recommendations, not browser field writes; answers still included unnecessary follow-up offers.
+
+written with gpt-6.1-sol in Codex
