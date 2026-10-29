@@ -2,6 +2,7 @@ import { z } from "zod"
 import { Group, co } from "jazz-tools"
 import { createImage } from "jazz-tools/media"
 import { Person, Note, Reminder } from "#shared/schema/user"
+import { personSummaryGuidance } from "#shared/tools/person-summary-guidance"
 import {
 	defineTool,
 	createdSchema,
@@ -24,12 +25,7 @@ type PersonCurrent = z.infer<typeof personCurrent>
 
 let createPersonInput = z.object({
 	name: z.string().describe("The person's name"),
-	summary: z
-		.string()
-		.optional()
-		.describe(
-			"A compact summary displayed next to the person's name and avatar. Should include key details like relationship, profession, location, and personality traits. Example: 'sister in law, doctor, lives in switzerland with erik, high energy and positivity'",
-		),
+	summary: z.string().optional().describe(personSummaryGuidance),
 })
 
 type CreatePersonInput = z.infer<typeof createPersonInput> & {

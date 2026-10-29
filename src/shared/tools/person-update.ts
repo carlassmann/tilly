@@ -9,6 +9,7 @@ import {
 	type Worker,
 } from "#shared/tools/define-tool"
 import { personCurrent } from "#shared/tools/person-create"
+import { personSummaryGuidance } from "#shared/tools/person-summary-guidance"
 
 export { updatePerson, createUpdatePersonTool, createDeletePersonTool }
 
@@ -17,12 +18,7 @@ type PersonCurrent = z.infer<typeof personCurrent>
 let updatePersonInput = z.object({
 	personId: z.string().describe("The person's ID"),
 	name: z.string().optional().describe("The person's new name"),
-	summary: z
-		.string()
-		.optional()
-		.describe(
-			"A compact summary displayed next to the person's name and avatar. Should include key details like relationship, profession, location, and personality traits. Example: 'sister in law, doctor, lives in switzerland with erik, high energy and positivity'",
-		),
+	summary: z.string().optional().describe(personSummaryGuidance),
 })
 
 type UpdatePersonInput = z.infer<typeof updatePersonInput> & {

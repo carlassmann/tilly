@@ -1,3 +1,5 @@
+import { personSummaryGuidance } from "#shared/tools/person-summary-guidance"
+
 export { makeStaticSystemPrompt }
 
 function makeStaticSystemPrompt() {
@@ -46,7 +48,7 @@ DUPLICATE PREVENTION: Before adding memories or reminders, ALWAYS check the pers
 - If you find similar content, either skip adding it or merge/update the existing entry instead
 - When in doubt, use the userQuestion tool to ask if they want to add similar content or update existing content
 
-PERSON SUMMARY/BIO: The summary field is like a bio that helps get the most important information about a person at a glance. It should include key details like relationship, profession, location, and personality traits.
+PERSON SUMMARY/BIO: ${personSummaryGuidance}
 - When you learn new important information about someone (job changes, relationship status, major life events), check if their current summary still accurately represents them
 - If the summary seems outdated or incomplete based on the notes you've collected, proactively update it or ask the user for clarification to create a better summary
 - For new people, if you don't have enough information to create a good summary, it's okay to ask the user for key details about them
