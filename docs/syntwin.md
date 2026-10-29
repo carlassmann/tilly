@@ -88,3 +88,19 @@ QA sessions: `jx7857njh6yfsk44j7z3ata3018h26n3` (walkthrough), `jx72vby2n378ntsv
 Broader QA: `jx7frqx66passt2a0bsq1ex9bd8h2150` (privacy/sharing gap), `jx7e6dspskfc7dn85zp5cpxb358h3wnk` (cancellation/sharing pass), `jx7251n41pdc5t1fv6hev5edtn8h3cnz` (maintenance/exit).
 
 written with gpt-6.1-sol in Codex
+
+## Website conversation review, 29 October 2026
+
+The owner's conversation `jx76zm5y6ss8ey84ymh3qhm7198h76yp` exposed four failures: an unsolicited offer to add a first person, reading prices without showing the cards, requesting page access only after repeated prompting, and visitor-facing deliberation about how to answer. The transcript confirms these were assistant text messages, not merely a developer-only debug panel.
+
+Updated the live room and `syntwin-room-instructions.md` to establish interest first, use the website beside the conversation, proactively request access when showing helps, and scroll/highlight before explaining. A personal example does not authorize creating data. Page reads include off-screen content, so reading a pricing section alone does not show it.
+
+Fresh English session `jx722fx46r0pcrm8xcn1xkydx58h731e` and German session `jx7dtf0p4rct7sm2tn31hxh8f58h735d` requested access, read and highlighted pricing, scrolled its heading into the viewport, explained both plans, and appended no onboarding offer. Both closed without another discovery question when told there was enough information. These tests used the remote twin embedded in local Tilly. They do not validate spoken-input behavior.
+
+Tool narration still occurred, including "I'll read the page to find the pricing." Room prose alone did not eliminate it. Syntwin's higher-priority embed prompt requires a line before actions, forces a demonstration after a relevant personal example, and its general grounding rule requires knowledge retrieval even for facts on the host page. A correction is prepared in `../syntwin-mono`; it is not deployed. The separate reasoning-leak issue is tracked at https://github.com/SynTwin/mono/issues/2061. Do not claim it is fixed from these successful turns.
+
+The prepared Syntwin correction passes `bun run check`, all 5,301 tests, and 9 targeted real-model eval trials for discovery, proactive page access and German closing. This does not establish that reasoning leaks are eliminated in every context. The first eval command also collected stale nested worktrees; a scoped rerun excluded those directories and passed.
+
+Syntwin caches the assembled prompt in a session. Updated room instructions require a fresh conversation for a reliable retest; closing/reopening the panel keeps the existing session. Use a separate browser tab for fresh QA rather than clearing Tilly's site data, which could erase anonymous journal entries.
+
+written with gpt-6.1-sol in Codex
