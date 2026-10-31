@@ -24,6 +24,8 @@ function SyntwinGuide({ locale }: { locale: string }) {
 		script.async = true
 		script.dataset.room = PUBLIC_SYNTWIN_ROOM_ID
 		script.dataset.launcher = "none"
+		script.dataset.context =
+			"The visitor is inside the Tilly app, where they can manage people, notes and reminders. This is in-app help, possibly continuing a walkthrough from the website."
 		document.body.append(script)
 	}, [locale])
 

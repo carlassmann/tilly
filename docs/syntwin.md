@@ -2,7 +2,9 @@
 
 The website loads Carl's live Syntwin through `src/shared/ui/syntwin-embed.astro`. The app loads it through `src/app/components/syntwin-guide.tsx` once the account locale is known. The script stays outside the React router, so app navigation preserves the conversation. Syntwin restores the conversation across full page loads on the same origin.
 
-The website shows the room's launcher. The app keeps an open conversation from the website, but shows no floating launcher when the guide is closed. Open it through **Settings → Help → Talk to Carl's AI twin**. The app uses `data-launcher="none"` and Syntwin's `data-syntwin-open-state` to show only the open conversation. The Settings button uses the embed's `data-syntwin-open` trigger.
+Both scripts set `data-context`. The website identifies a visitor exploring Tilly; the app identifies in-app help, including a continued website walkthrough. Syntwin reads this context before the first reply and updates it when an existing conversation moves into the app. The room instructions use it to choose a website introduction or an in-app help opener without restarting the conversation. The attribute contains no journal or account data.
+
+The website shows the room's launcher. Fresh app visits have no floating launcher; open the guide through **Settings → Help → Talk to Carl's AI twin**. The app uses `data-launcher="none"`; Syntwin still shows a launcher for an ongoing conversation carried from the website. The Settings button uses the embed's `data-syntwin-open` trigger.
 
 - Public room: https://my.syntwin.ai/app/d/j97dc3ekdfj0hffadfwwqb19w98h3q3m
 - Room settings: https://my.syntwin.ai/app/deploy/j97dc3ekdfj0hffadfwwqb19w98h3q3m?settings=omny
@@ -22,7 +24,7 @@ The Syntwin connector can edit room instructions and source access. Omny page ac
 
 Room email notifications are enabled for ended conversations. Visitors may leave feedback in chat, email assmann@hey.com, or create a public GitHub issue. The room has a GitHub issue CTA; email uses a Markdown mailto link because configured Syntwin CTAs accept only HTTP(S). Settings Help also has both links. Notification delivery and response times must not be promised.
 
-Under **General → Edit**, set the room's privacy notice URL to https://tilly.social/en/privacy. This field is also unavailable through the connector.
+The room's privacy notice URL is https://tilly.social/en/privacy, verified in the production embed on 31 October 2026. Edit it under **General → Edit**; this field is unavailable through the connector.
 
 ## Local trial
 
@@ -31,6 +33,10 @@ Run `work up`, then `work urls`. Open the local web URL. The embed loads product
 Try asking what Tilly does, then request a person, note and reminder. Check that navigation into `/app` stays on the local origin and keeps the conversation. Verify the saved results, declined and revoked page access, German pages, and a phone viewport.
 
 Account controls are hidden with `data-syntwin-hidden`. Sign-in and bulk data controls use `data-syntwin-readonly`. `data-syntwin-avoid="0px"` on the hero actions folds the launcher while those actions are visible on phones. Its value must be an IntersectionObserver margin, not a React boolean attribute.
+
+## Context verified locally, 31 October 2026
+
+Tested the local app against production Syntwin with the room in test mode. A fresh English website chat introduced Carl's motivation and asked about someone to check in on; a fresh German website chat did the same in German. A fresh English app chat opened from Settings Help asked what the visitor needed help with inside Tilly, without the website introduction. Website-to-app navigation preserved the session and transcript; the next message stored the app context and received an app-help answer. Desktop and 390px mobile layouts were checked. `bun check` and `bun run build` passed.
 
 ## Verified locally, 27 October 2026
 
