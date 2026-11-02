@@ -1,5 +1,6 @@
 ---
 import "#app/index.css"
+import SyntwinEmbed from "#shared/ui/syntwin-embed.astro"
 import { PUBLIC_PLAUSIBLE_DOMAIN } from "astro:env/client"
 
 interface Props {
@@ -21,7 +22,7 @@ let metaDescription = description ?? ""
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={Astro.currentLocale ?? "en"}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="description" content={metaDescription} />
@@ -53,6 +54,7 @@ let metaDescription = description ?? ""
 	</head>
 	<body class="min-h-screen bg-background text-foreground">
 		<slot />
+		<SyntwinEmbed />
 	</body>
 </html>
 

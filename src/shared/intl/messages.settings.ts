@@ -6,6 +6,12 @@ const baseSettingsMessages = messages({
 	// Settings page messages
 	"settings.title": "Settings",
 	"settings.pageTitle": "Settings",
+	"settings.help.title": "Help",
+	"settings.help.description":
+		"Carl's AI twin can explain Tilly and walk you through it. Requires internet.",
+	"settings.help.open": "Talk to Carl's AI twin",
+	"settings.help.email": "Email Carl",
+	"settings.help.issue": "Create a GitHub issue",
 	"settings.account.title": "Account",
 	"settings.account.description.signedIn":
 		"Manage your authentication status, access account settings, and handle your subscription.",
@@ -361,6 +367,12 @@ const baseSettingsMessages = messages({
 })
 
 let deSettingsMessages = translate(baseSettingsMessages, {
+	"settings.help.title": "Hilfe",
+	"settings.help.description":
+		"Carls KI-Zwilling erklärt Tilly und führt dich durch die App. Benötigt Internet.",
+	"settings.help.open": "Mit Carls KI-Zwilling sprechen",
+	"settings.help.email": "Carl eine E-Mail schreiben",
+	"settings.help.issue": "GitHub-Issue erstellen",
 	// Settings page messages
 	"settings.title": "Einstellungen",
 	"settings.pageTitle": "Einstellungen",

@@ -43,7 +43,7 @@ function AccountSection() {
 						: t("settings.account.description.signedOut.offline")
 			}
 		>
-			<div className={sectionStackClass}>
+			<div className={sectionStackClass} data-syntwin-hidden>
 				{isAuthenticated ? (
 					<>
 						<div>

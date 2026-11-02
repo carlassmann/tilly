@@ -110,6 +110,7 @@ function WelcomeIndex() {
 							<SignInButton mode="redirect" forceRedirectUrl="/app/people">
 								<Button
 									variant="secondary"
+									data-syntwin-readonly
 									onClick={() => setTourSkipped(true)}
 								>
 									<PersonCircle />

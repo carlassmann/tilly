@@ -21,6 +21,7 @@ import {
 import { PWAInstallHint } from "#app/components/pwa-install-hint"
 import { Toaster } from "#shared/ui/sonner"
 import { MainErrorBoundary } from "#app/components/main-error-boundary"
+import { SyntwinGuide } from "#app/components/syntwin-guide"
 
 export function PWA() {
 	return (
@@ -74,6 +75,7 @@ function RouterWithJazz() {
 
 	return (
 		<SplashVisibilityProvider visible={showSplash}>
+			{contextMe && <SyntwinGuide locale={locale} />}
 			<LayoutGroup>
 				<SplashScreen show={showSplash} />
 				{locale === "de" ? (

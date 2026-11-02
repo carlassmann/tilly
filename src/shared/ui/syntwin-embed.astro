@@ -1,0 +1,18 @@
+---
+import {
+	PUBLIC_SYNTWIN_ENABLED,
+	PUBLIC_SYNTWIN_ROOM_ID,
+} from "astro:env/client"
+---
+
+{
+	PUBLIC_SYNTWIN_ENABLED && PUBLIC_SYNTWIN_ROOM_ID && (
+		<script
+			is:inline
+			async
+			src="https://my.syntwin.ai/omny.js"
+			data-room={PUBLIC_SYNTWIN_ROOM_ID}
+			data-context="The visitor is on Tilly's public website, exploring whether Tilly is useful to them."
+		/>
+	)
+}

@@ -63,7 +63,10 @@ function SplashScreenStatic() {
 	}, [])
 
 	return (
-		<div className="flex min-h-screen flex-col items-center justify-center gap-4">
+		<div
+			aria-busy="true"
+			className="flex min-h-screen flex-col items-center justify-center gap-4"
+		>
 			<img src="/app/icons/icon-192x192.png" className="size-24 rounded-lg" />
 			<TypographyH1>Tilly</TypographyH1>
 		</div>
@@ -75,6 +78,7 @@ function SplashScreen({ show }: { show?: boolean }) {
 		<AnimatePresence>
 			{show !== false && (
 				<motion.div
+					aria-busy="true"
 					className="bg-background pointer-events-none fixed inset-0 z-50 flex min-h-screen flex-col items-center justify-center gap-4"
 					initial={{ opacity: 1 }}
 					exit={{ opacity: 0 }}

@@ -18,7 +18,7 @@ function DataSection({ me }: { me: SettingsAccount }) {
 			title={t("settings.data.title")}
 			description={t("settings.data.description")}
 		>
-			<div className={sectionStackClass}>
+			<div className={sectionStackClass} data-syntwin-readonly>
 				<div className="space-y-2">
 					<p className="mb-1 text-sm font-medium">
 						<T k="settings.data.export.label" />

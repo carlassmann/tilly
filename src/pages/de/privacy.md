@@ -7,7 +7,7 @@ locale: "de"
 
 # Datenschutzerklärung
 
-_Stand: 1. September 2025_
+_Stand: 27. Oktober 2026_
 
 ## Verantwortlicher
 
@@ -40,6 +40,18 @@ E-Mail: assmann@hey.com
 
 ## Drittanbieter-Dienste
 
+### Syntwin-Websitebegleiter
+
+Carls KI-Zwilling kann Tilly erklären und durch die Website und App führen. Dieser optionale Begleiter ist unabhängig vom Tilly Agent.
+
+- Beim Laden einer Seite mit dem Begleiter wird Syntwin kontaktiert, um das Skript und die Raumeinstellungen abzurufen, bevor du ein Gespräch beginnst. Dabei erhält Syntwin Verbindungsdaten wie deine IP-Adresse und die Website-Herkunft.
+- Nachrichten an den Begleiter werden in Syntwin verarbeitet und gespeichert. Anrufe werden transkribiert. Carl kann Gespräche einschließlich deines Feedbacks einsehen.
+- Der Begleiter fragt um Erlaubnis, bevor er die Seite liest oder bedient. Mit deiner Zustimmung können sichtbare Seiteninhalte einschließlich angezeigter Journaldetails zur Hilfestellung an Syntwin übermittelt werden. Den Seitenzugriff kannst du im Begleiter widerrufen.
+- Die Kontosteuerung in den Einstellungen ist vom Seitenzugriff ausgeschlossen. Passwort- und Kreditkartenfelder schließt die Einbettung aus.
+- Gesprächsstatus und Zugriffsentscheidung werden im Sitzungsspeicher dieses Browsertabs gespeichert, damit das Gespräch beim Seitenwechsel weitergeht.
+- Tillys Journalverschlüsselung verbirgt keine Seiteninhalte, die du mit dem Begleiter teilst. Für eine Einführung kannst du erfundene Beispiele verwenden.
+- Datenschutzhinweis von Syntwin: https://my.syntwin.ai/de/legal/privacy
+
 ### Clerk (Authentifizierung)
 
 - Verarbeitet Authentifizierung und speichert Verschlüsselungsschlüssel
@@ -71,6 +83,8 @@ E-Mail: assmann@hey.com
 - Daten werden gespeichert, bis du dein Konto löschst
 - Kontolöschung entfernt alle Daten und Verschlüsselungsschlüssel
 - Backups werden automatisch innerhalb von 30 Tagen gelöscht
+
+Gespräche mit dem Begleiter werden separat in Syntwin gespeichert. Das Löschen deines Tilly-Kontos löscht diese Gespräche nicht automatisch. Wende dich für die Löschung von Gesprächen an assmann@hey.com.
 
 ## Deine Rechte (DSGVO)
 

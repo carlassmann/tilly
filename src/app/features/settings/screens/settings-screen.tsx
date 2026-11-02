@@ -13,6 +13,7 @@ import { PWASection } from "../widgets/pwa-section"
 import { AppSection } from "../widgets/app-section"
 import { DataSection } from "../widgets/data-section"
 import { AboutSection } from "../widgets/about-section"
+import { HelpSection } from "../widgets/help-section"
 
 export { SettingsScreen }
 
@@ -38,6 +39,7 @@ function SettingsScreen({ fallback }: SettingsScreenProps) {
 				{!isPWAInstalled && <PWASection />}
 				<AppSection />
 				<DataSection me={me} />
+				<HelpSection />
 				<AboutSection me={me} />
 			</div>
 		</div>
