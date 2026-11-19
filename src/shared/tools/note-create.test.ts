@@ -104,10 +104,11 @@ describe("createNote", () => {
 			await owner.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(collaborator)
-			await createNote(collaborator, {
+			let result = await createNote(collaborator, {
 				personId: person.$jazz.id,
 				content: "from collaborator",
 			})
+			expect(result.current.content).toBe("from collaborator")
 			await collaborator.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)

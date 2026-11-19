@@ -55,6 +55,7 @@ test("demoFrameAt types the note into the dialog before saving its full text", (
 	let text = demoStory("en").notes.sarahInterview.text
 	expect(text.startsWith(frameAt("log", 0.4).dialog?.text ?? "x")).toBe(true)
 	expect(frameAt("log", 0.9).notes.sarahInterview).toBe(text)
+	expect(frameAt("talk", 0).notes.sarahInterview).toBe(text)
 })
 
 test("demoFrameAt puts the agent's answer after its tool calls", () => {

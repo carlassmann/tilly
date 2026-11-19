@@ -35,12 +35,14 @@ describe("listPeople", () => {
 		await seedDeletedPerson()
 		let result = await listPeople(owner, { includeDeleted: false })
 		expect(describePeople(result)).toEqual(["Active"])
+		expect(result.count).toBe(1)
 	})
 
 	test("includeDeleted returns both", async () => {
 		await seedDeletedPerson()
 		let result = await listPeople(owner, { includeDeleted: true })
 		expect(describePeople(result)).toEqual(["Active", "Deleted · deleted"])
+		expect(result.count).toBe(2)
 	})
 
 	test("search filters by name and summary", async () => {

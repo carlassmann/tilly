@@ -84,10 +84,14 @@ describe("updateReminder", () => {
 			repeat: { interval: 1, unit: "week" },
 		})
 
-		await updateReminder(owner, {
+		let result = await updateReminder(owner, {
 			personId: person.$jazz.id,
 			reminderId: reminder.$jazz.id,
 			done: true,
+		})
+		expect(result.current).toMatchObject({
+			done: false,
+			dueAtDate: "2099-01-08",
 		})
 		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
 			{
