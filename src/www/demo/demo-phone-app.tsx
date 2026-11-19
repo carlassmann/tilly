@@ -64,6 +64,7 @@ function DemoPhoneApp() {
 	let locale: DemoLocale = position?.locale ?? pageLocale()
 	let sceneIndex = position?.sceneIndex ?? 0
 	let world = useDemoWorld(locale)
+	useDocumentLanguage(locale)
 	useReadyAnnouncement(world !== null, position !== null)
 	let [router] = useState(createDemoRouter)
 	let isVisitorDriving = useVisitorTakeover(demoSceneIds[sceneIndex])
@@ -570,6 +571,12 @@ function positionFromUrl(): StageMessage | null {
 		sceneIndex,
 		progress: Number(params.get("progress") ?? 1),
 	}
+}
+
+function useDocumentLanguage(locale: DemoLocale) {
+	useEffect(() => {
+		document.documentElement.lang = locale
+	}, [locale])
 }
 
 function pageLocale(): DemoLocale {

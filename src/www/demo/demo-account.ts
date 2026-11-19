@@ -105,12 +105,12 @@ async function createDemoWorld(locale: DemoLocale): Promise<DemoWorld> {
 			},
 			group,
 		)
-		let avatar = await createImage(await avatarImage(friendId), {
-			owner: group,
-			maxSize: 256,
-		})
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- same cast as the person tools
-		person.$jazz.set("avatar", avatar as any)
+		let photo = await avatarImage(friendId)
+		if (photo) {
+			let avatar = await createImage(photo, { owner: group, maxSize: 256 })
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any -- same cast as the person tools
+			person.$jazz.set("avatar", avatar as any)
+		}
 		loaded.root.people.$jazz.push(person)
 		personIds[friendId] = person.$jazz.id
 	}
@@ -217,10 +217,15 @@ function scriptedValues() {
 	}
 }
 
-async function avatarImage(friendId: DemoFriendId): Promise<Blob> {
-	let response = await fetch(`/images/demo/${friendId}.webp`)
-	if (!response.ok) throw new Error(`No avatar for ${friendId}`)
-	return response.blob()
+// A photo that doesn't load leaves the friend with initials rather than
+// keeping the whole demo from starting.
+async function avatarImage(friendId: DemoFriendId): Promise<Blob | null> {
+	try {
+		let response = await fetch(`/images/demo/${friendId}.webp`)
+		return response.ok ? await response.blob() : null
+	} catch {
+		return null
+	}
 }
 
 function currentOf<T extends { current: unknown }>(
