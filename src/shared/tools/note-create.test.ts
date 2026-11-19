@@ -43,11 +43,15 @@ describe("createNote", () => {
 			  "operation": "create",
 			}
 		`)
+		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: the note links back to the person it was created for
 		expect(result.current.personId).toBe(person.$jazz.id)
 
 		let stored = await storedNotes(person)
-		expect(stored.map(n => n.$jazz.id)).toEqual([result.current.noteId])
-		expect(stored[0]?.content).toBe("first note")
+		let describeStored = (n: (typeof stored)[number]) =>
+			`${n.$jazz.id === result.current.noteId ? "created" : "other"}: ${n.content}`
+		expect(stored.map(describeStored).join(", ")).toMatchInlineSnapshot(
+			`"created: first note"`,
+		)
 	})
 
 	test("content survives a reload via Note.load", async () => {
@@ -60,11 +64,11 @@ describe("createNote", () => {
 			title: "T",
 		})
 
-		expect(await Note.load(result.current.noteId)).toMatchObject({
-			content: "persisted",
-			pinned: true,
-			title: "T",
-		})
+		let note = await Note.load(result.current.noteId)
+		expect(
+			note.$isLoaded &&
+				`${note.title} · ${note.content} · pinned=${note.pinned}`,
+		).toMatchInlineSnapshot(`"T · persisted · pinned=true"`)
 	})
 
 	test("bumps the person's updatedAt", async () => {
@@ -77,6 +81,7 @@ describe("createNote", () => {
 			content: "x",
 		})
 
+		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: any edit moves the person's updatedAt forward
 		expect(person.updatedAt.getTime()).toBeGreaterThan(before)
 	})
 
@@ -86,7 +91,7 @@ describe("createNote", () => {
 				personId: "co_zNonExistent",
 				content: "x",
 			}),
-		).rejects.toBeDefined()
+		).rejects.toThrow("person not found")
 	})
 
 	describe("multi-user", () => {
@@ -108,12 +113,19 @@ describe("createNote", () => {
 				personId: person.$jazz.id,
 				content: "from collaborator",
 			})
-			expect(result.current.content).toBe("from collaborator")
 			await collaborator.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)
 			let stored = await storedNotes(person)
-			expect(stored.map(n => n.content)).toEqual(["from collaborator"])
+			expect([
+				`returned: ${result.current.content}`,
+				...stored.map(n => `owner sees: ${n.content}`),
+			]).toMatchInlineSnapshot(`
+				[
+				  "returned: from collaborator",
+				  "owner sees: from collaborator",
+				]
+			`)
 		})
 
 		test("a non-member cannot load the person, createNote rejects", async () => {
@@ -127,7 +139,7 @@ describe("createNote", () => {
 					personId: person.$jazz.id,
 					content: "should fail",
 				}),
-			).rejects.toBeDefined()
+			).rejects.toThrow("person not found")
 		})
 	})
 })

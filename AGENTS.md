@@ -16,4 +16,5 @@ Local-first PWA for personal CRM, built with Jazz and AI SDK.
 - [Operations Pattern](docs/operations.md)
 - [Storage](docs/storage.md)
 - [AI Tools](docs/ai-tools.md)
+- [Testing](docs/testing.md)
 - [Blog Posts](docs/blog.md)

@@ -11,8 +11,12 @@ import {
 	seedReminder,
 } from "#shared/tools/test-helpers"
 
-function describePeople({ people }: Awaited<ReturnType<typeof listPeople>>) {
-	return people.map(p => `${p.name}${p.deletedAt ? " · deleted" : ""}`)
+function describePeople({
+	people,
+	count,
+}: Awaited<ReturnType<typeof listPeople>>) {
+	let names = people.map(p => `${p.name}${p.deletedAt ? " · deleted" : ""}`)
+	return `${names.join(", ")} (count ${count})`
 }
 
 describe("listPeople", () => {
@@ -34,15 +38,15 @@ describe("listPeople", () => {
 	test("returns active people, hides deleted by default", async () => {
 		await seedDeletedPerson()
 		let result = await listPeople(owner, { includeDeleted: false })
-		expect(describePeople(result)).toEqual(["Active"])
-		expect(result.count).toBe(1)
+		expect(describePeople(result)).toMatchInlineSnapshot(`"Active (count 1)"`)
 	})
 
 	test("includeDeleted returns both", async () => {
 		await seedDeletedPerson()
 		let result = await listPeople(owner, { includeDeleted: true })
-		expect(describePeople(result)).toEqual(["Active", "Deleted · deleted"])
-		expect(result.count).toBe(2)
+		expect(describePeople(result)).toMatchInlineSnapshot(
+			`"Active, Deleted · deleted (count 2)"`,
+		)
 	})
 
 	test("search filters by name and summary", async () => {
@@ -58,8 +62,15 @@ describe("listPeople", () => {
 			search: "compilers",
 			includeDeleted: false,
 		})
-		expect(describePeople(byName)).toEqual(["Grace Hopper"])
-		expect(describePeople(bySummary)).toEqual(["Grace Hopper"])
+		expect([
+			`grace -> ${describePeople(byName)}`,
+			`compilers -> ${describePeople(bySummary)}`,
+		]).toMatchInlineSnapshot(`
+			[
+			  "grace -> Grace Hopper (count 1)",
+			  "compilers -> Grace Hopper (count 1)",
+			]
+		`)
 	})
 })
 
@@ -131,7 +142,9 @@ describe("getPersonDetails", () => {
 		await seedNote(person, { content: "gone", deletedAt: new Date() })
 
 		let result = await readDetails(person.$jazz.id)
-		expect(result.notes.map(n => n.content)).toEqual(["kept"])
+		expect(result.notes.map(n => n.content).join(", ")).toMatchInlineSnapshot(
+			`"kept"`,
+		)
 	})
 
 	test("search filters notes and reminders", async () => {
@@ -145,11 +158,20 @@ describe("getPersonDetails", () => {
 		await seedReminder(person, { text: "other ping", dueAtDate: "2099-01-01" })
 
 		let result = await readDetails(person.$jazz.id, "needle")
-		expect(result.notes.map(n => n.content)).toEqual(["needle in haystack"])
-		expect(result.reminders.map(r => r.text)).toEqual(["needle ping"])
+		expect([
+			...result.notes.map(n => `note: ${n.content}`),
+			...result.reminders.map(r => `reminder: ${r.text}`),
+		]).toMatchInlineSnapshot(`
+			[
+			  "note: needle in haystack",
+			  "reminder: needle ping",
+			]
+		`)
 	})
 
 	test("throws when person not found", async () => {
-		await expect(readDetails("co_zNope")).rejects.toBeDefined()
+		await expect(readDetails("co_zNope")).rejects.toThrow(
+			'Person with ID "co_zNope" not found',
+		)
 	})
 })

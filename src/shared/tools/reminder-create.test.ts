@@ -9,6 +9,13 @@ import {
 	seedPerson,
 } from "#shared/tools/test-helpers"
 
+function describeStored(
+	reminder: { $jazz: { id: string }; text: string },
+	createdId: string,
+) {
+	return `${reminder.$jazz.id === createdId ? "created" : "other"}: ${reminder.text}`
+}
+
 describe("createReminder", () => {
 	let owner: co.loaded<typeof UserAccount>
 
@@ -43,8 +50,10 @@ describe("createReminder", () => {
 			resolve: { reminders: { $each: true } },
 		})
 		expect(
-			loaded.reminders.some(r => r?.$jazz.id === result.current.reminderId),
-		).toBe(true)
+			loaded.reminders
+				.map(r => describeStored(r, result.current.reminderId))
+				.join(", "),
+		).toMatchInlineSnapshot(`"created: call back"`)
 	})
 
 	test("persists repeat config", async () => {
@@ -59,7 +68,8 @@ describe("createReminder", () => {
 
 		let reloaded = await Reminder.load(result.current.reminderId)
 		if (!reloaded?.$isLoaded) throw new Error("reminder not loaded")
-		expect(reloaded.repeat).toMatchObject({ interval: 1, unit: "week" })
+		let { interval, unit } = reloaded.repeat ?? {}
+		expect(`every ${interval} ${unit}`).toMatchInlineSnapshot(`"every 1 week"`)
 	})
 
 	test("throws when person not found", async () => {
@@ -69,7 +79,7 @@ describe("createReminder", () => {
 				text: "x",
 				dueAtDate: "2099-01-01",
 			}),
-		).rejects.toBeDefined()
+		).rejects.toThrow("person not found")
 	})
 
 	describe("multi-user", () => {
@@ -94,8 +104,10 @@ describe("createReminder", () => {
 				resolve: { reminders: { $each: true } },
 			})
 			expect(
-				loaded.reminders.some(r => r?.$jazz.id === result.current.reminderId),
-			).toBe(true)
+				loaded.reminders
+					.map(r => describeStored(r, result.current.reminderId))
+					.join(", "),
+			).toMatchInlineSnapshot(`"created: from other"`)
 		})
 	})
 })

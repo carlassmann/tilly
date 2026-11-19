@@ -12,7 +12,7 @@ describe("copyNotificationSettingsData", () => {
 		keys: { p256dh: `key-${name}`, auth: `auth-${name}` },
 	})
 
-	test("copies all settings fields", () => {
+	test("copies all settings fields and every device", () => {
 		let settings: NotificationSettingsInput = {
 			version: 1,
 			timezone: "America/New_York",
@@ -20,34 +20,34 @@ describe("copyNotificationSettingsData", () => {
 			lastDeliveredAt: new Date("2025-01-15T14:00:00Z"),
 			language: "de",
 			latestReminderDueDate: "2025-02-01",
-			pushDevices: [device("iPhone", true)],
+			pushDevices: [device("iPhone", true), device("iPad", false)],
 		}
+		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: migration must not lose any setting or device
 		expect(copyNotificationSettingsData(settings, undefined)).toEqual(settings)
 	})
 
 	test("falls back to rootLanguage only when settings have no language", () => {
 		let base: NotificationSettingsInput = { version: 1, pushDevices: [] }
 		let withEnglish = { ...base, language: "en" as const }
-		expect(copyNotificationSettingsData(base, "de").language).toBe("de")
-		expect(copyNotificationSettingsData(withEnglish, "de").language).toBe("en")
-	})
-
-	test("copies multiple devices", () => {
-		let pushDevices = [device("Device 1", true), device("Device 2", false)]
-		let result = copyNotificationSettingsData({ pushDevices }, undefined)
-		expect(result.pushDevices).toEqual(pushDevices)
+		let fallback = copyNotificationSettingsData(base, "de").language
+		let kept = copyNotificationSettingsData(withEnglish, "de").language
+		expect(`no language -> ${fallback}, en -> ${kept}`).toMatchInlineSnapshot(
+			`"no language -> de, en -> en"`,
+		)
 	})
 
 	test("handles undefined optional fields", () => {
 		let result = copyNotificationSettingsData({ pushDevices: [] }, undefined)
-		expect(result).toStrictEqual({
-			version: 1,
-			timezone: undefined,
-			notificationTime: undefined,
-			lastDeliveredAt: undefined,
-			language: undefined,
-			latestReminderDueDate: undefined,
-			pushDevices: [],
-		})
+		expect(result).toMatchInlineSnapshot(`
+			{
+			  "language": undefined,
+			  "lastDeliveredAt": undefined,
+			  "latestReminderDueDate": undefined,
+			  "notificationTime": undefined,
+			  "pushDevices": [],
+			  "timezone": undefined,
+			  "version": 1,
+			}
+		`)
 	})
 })

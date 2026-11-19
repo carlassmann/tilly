@@ -1,32 +1,10 @@
 import { expect, test } from "vitest"
-import { co } from "jazz-tools"
-import { Person } from "#shared/schema/user"
 import {
 	createAccount,
-	redactNoise,
 	seedPerson,
 	seedReminder,
 } from "#shared/tools/test-helpers"
-
-function extractRemindersForSync(
-	people: Iterable<co.loaded<
-		typeof Person,
-		{ reminders: { $each: true } }
-	> | null>,
-	isDeleted: (item: { deletedAt?: Date }) => boolean,
-): { id: string; dueAtDate: string }[] {
-	let reminders: { id: string; dueAtDate: string }[] = []
-
-	for (let person of people) {
-		if (!person?.reminders || isDeleted(person)) continue
-		for (let reminder of person.reminders.values()) {
-			if (!reminder || reminder.done || isDeleted(reminder)) continue
-			reminders.push({ id: reminder.$jazz.id, dueAtDate: reminder.dueAtDate })
-		}
-	}
-
-	return reminders
-}
+import { extractRemindersForSync } from "./use-sync-reminders-to-sw"
 
 test("extractRemindersForSync", async () => {
 	let cases: {
@@ -60,10 +38,10 @@ test("extractRemindersForSync", async () => {
 			],
 		},
 	]
-	let results = []
+	let table = []
 	for (let scenario of cases) {
 		let account = await createAccount({ isCurrentActive: true })
-		let activeReminders = []
+		let seededNames = new Map<string, string>()
 		for (let [index, fixture] of scenario.people.entries()) {
 			let person = await seedPerson(account, { name: `Person ${index + 1}` })
 			if (fixture.deleted) person.$jazz.set("deletedAt", new Date())
@@ -74,64 +52,24 @@ test("extractRemindersForSync", async () => {
 					done: reminderFixture.done,
 					deletedAt: reminderFixture.deleted ? new Date() : undefined,
 				})
-				if (
-					!fixture.deleted &&
-					!reminderFixture.done &&
-					!reminderFixture.deleted
-				) {
-					activeReminders.push({
-						id: reminder.$jazz.id,
-						dueAtDate: reminder.dueAtDate,
-					})
-				}
+				seededNames.set(reminder.$jazz.id, person.name)
 			}
 		}
 		let { root } = await account.$jazz.ensureLoaded({
 			resolve: { root: { people: { $each: { reminders: { $each: true } } } } },
 		})
-		let reminders = extractRemindersForSync(
-			root.people.values(),
-			item => !!item.deletedAt,
+		let reminders = extractRemindersForSync(root.people.values()).map(
+			({ id, dueAtDate }) => `${seededNames.get(id) ?? id} ${dueAtDate}`,
 		)
-		expect(reminders, scenario.name).toEqual(activeReminders)
-		results.push({ scenario: scenario.name, reminders })
+		table.push(`${scenario.name} -> [${reminders.join(", ")}]`)
 	}
-	expect(redactNoise(results)).toMatchInlineSnapshot(`
+	expect(table).toMatchInlineSnapshot(`
 		[
-		  {
-		    "reminders": [
-		      {
-		        "dueAtDate": "2025-01-15",
-		        "id": "<id>",
-		      },
-		    ],
-		    "scenario": "active reminder",
-		  },
-		  {
-		    "reminders": [],
-		    "scenario": "done reminder",
-		  },
-		  {
-		    "reminders": [],
-		    "scenario": "deleted reminder",
-		  },
-		  {
-		    "reminders": [],
-		    "scenario": "deleted person",
-		  },
-		  {
-		    "reminders": [
-		      {
-		        "dueAtDate": "2025-01-15",
-		        "id": "<id>",
-		      },
-		      {
-		        "dueAtDate": "2025-01-20",
-		        "id": "<id>",
-		      },
-		    ],
-		    "scenario": "multiple people",
-		  },
+		  "active reminder -> [Person 1 2025-01-15]",
+		  "done reminder -> []",
+		  "deleted reminder -> []",
+		  "deleted person -> []",
+		  "multiple people -> [Person 1 2025-01-15, Person 2 2025-01-20]",
 		]
 	`)
 })

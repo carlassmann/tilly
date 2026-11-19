@@ -37,12 +37,13 @@ let unloaded = (loadingState: string) => ({
 let withId = (id: string) => ({ $jazz: { id } })
 
 function summarizeRefs(refs: MockRef[]) {
-	return refs.map(ref => {
-		if (!ref) return null
+	let summaries = refs.map(ref => {
+		if (!ref) return "null"
 		if (ref.name) return ref.name
 		if (ref.$jazz?.id) return ref.$jazz.id
 		return `${ref.$isLoaded ? "loaded" : "unloaded"}: ${ref.$jazz?.loadingState}`
 	})
+	return summaries.join(" | ")
 }
 
 describe("getLoadedCoListValues", () => {
@@ -56,18 +57,19 @@ describe("getLoadedCoListValues", () => {
 		let result = getLoadedCoListValues<{ $isLoaded: boolean; name: string }>(
 			list,
 		)
-		expect(result.map(r => r.name)).toEqual(["a", "c"])
+		expect(result.map(r => r.name).join(", ")).toMatchInlineSnapshot(`"a, c"`)
 	})
 
 	test("returns empty array for non-list input", () => {
-		expect(getLoadedCoListValues(null)).toEqual([])
-		expect(getLoadedCoListValues("string")).toEqual([])
-		expect(getLoadedCoListValues(42)).toEqual([])
+		let results = [null, "string", 42].map(input =>
+			getLoadedCoListValues(input),
+		)
+		expect(JSON.stringify(results)).toMatchInlineSnapshot(`"[[],[],[]]"`)
 	})
 
 	test("returns empty array for list with all null values", () => {
 		let list = createMockCoList([null, null, undefined])
-		expect(getLoadedCoListValues(list)).toEqual([])
+		expect(getLoadedCoListValues(list)).toMatchInlineSnapshot(`[]`)
 	})
 })
 
@@ -80,17 +82,15 @@ describe("removeDeletedCoValueRefs", () => {
 			unloaded("unavailable"),
 		])
 		removeDeletedCoValueRefs(list)
-		expect(summarizeRefs(list)).toEqual([
-			"keep",
-			"unloaded: loading",
-			"unloaded: unavailable",
-		])
+		expect(summarizeRefs(list)).toMatchInlineSnapshot(
+			`"keep | unloaded: loading | unloaded: unavailable"`,
+		)
 	})
 
 	test("handles empty list", () => {
 		let list = createMockCoList([])
 		removeDeletedCoValueRefs(list)
-		expect(list).toHaveLength(0)
+		expect(summarizeRefs(list)).toMatchInlineSnapshot(`""`)
 	})
 })
 
@@ -105,12 +105,9 @@ describe("removeCoValueRefsByLoadingStates", () => {
 			unloaded("loading"),
 		])
 		removeCoValueRefsByLoadingStates(list, ["deleted", "unavailable"])
-		expect(summarizeRefs(list)).toEqual([
-			"loaded",
-			"loaded: deleted",
-			null,
-			"unloaded: loading",
-		])
+		expect(summarizeRefs(list)).toMatchInlineSnapshot(
+			`"loaded | loaded: deleted | null | unloaded: loading"`,
+		)
 	})
 
 	test("is a no-op on non-list input", () => {
@@ -128,12 +125,12 @@ describe("removeCoListRefsById", () => {
 			withId("co_a"),
 		])
 		removeCoListRefsById(list, "co_a")
-		expect(summarizeRefs(list)).toEqual([null, "co_b"])
+		expect(summarizeRefs(list)).toMatchInlineSnapshot(`"null | co_b"`)
 	})
 
 	test("is a no-op when id not found", () => {
 		let list = createMockCoList([withId("co_b")])
 		removeCoListRefsById(list, "co_a")
-		expect(summarizeRefs(list)).toEqual(["co_b"])
+		expect(summarizeRefs(list)).toMatchInlineSnapshot(`"co_b"`)
 	})
 })

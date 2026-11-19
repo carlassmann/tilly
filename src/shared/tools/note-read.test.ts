@@ -97,11 +97,13 @@ describe("listNotes", () => {
 		await seedNoteInOrder(ada, { content: "regular-2" })
 
 		let result = await listNotes(owner, { includeDeleted: false })
-		expect(describeNotes(result)).toEqual([
-			"pinned-1 · Ada · pinned",
-			"regular-2 · Ada",
-			"regular-1 · Ada",
-		])
+		expect(describeNotes(result)).toMatchInlineSnapshot(`
+			[
+			  "pinned-1 · Ada · pinned",
+			  "regular-2 · Ada",
+			  "regular-1 · Ada",
+			]
+		`)
 	})
 
 	test("search filters by content, title, person name", async () => {
@@ -116,11 +118,18 @@ describe("listNotes", () => {
 				searchQuery,
 				includeDeleted: false,
 			})
-			return describeNotes(result)
+			return `${searchQuery} -> ${describeNotes(result).join(", ")}`
 		}
-		expect(await search("needle here")).toEqual(["needle here · Ada"])
-		expect(await search("needle title")).toEqual(["boring · Ada"])
-		expect(await search("grace")).toEqual(["plain · Grace"])
+		let table = await Promise.all(
+			["needle here", "needle title", "grace"].map(search),
+		)
+		expect(table).toMatchInlineSnapshot(`
+			[
+			  "needle here -> needle here · Ada",
+			  "needle title -> boring · Ada",
+			  "grace -> plain · Grace",
+			]
+		`)
 	})
 
 	test("includeDeleted appends deleted notes at the end", async () => {
@@ -130,9 +139,11 @@ describe("listNotes", () => {
 		await softDelete(ada, dead.$jazz.id)
 
 		let result = await listNotes(owner, { includeDeleted: true })
-		expect(describeNotes(result)).toEqual([
-			"alive · Ada",
-			"dead · Ada · deleted",
-		])
+		expect(describeNotes(result)).toMatchInlineSnapshot(`
+			[
+			  "alive · Ada",
+			  "dead · Ada · deleted",
+			]
+		`)
 	})
 })

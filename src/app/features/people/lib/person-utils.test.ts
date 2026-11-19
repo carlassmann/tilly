@@ -16,8 +16,8 @@ test("isPersonAdmin", async () => {
 	await owner.$jazz.waitForAllCoValuesSync()
 	setActiveAccount(collaborator)
 	let loaded = await Person.load(shared.$jazz.id)
-	expect(loaded?.$isLoaded).toBe(true)
-	if (!loaded?.$isLoaded) return
+	if (!loaded?.$isLoaded)
+		throw new Error("collaborator cannot load shared person")
 	table.push(`writer collaborator -> ${isPersonAdmin(loaded)}`)
 	expect(table).toMatchInlineSnapshot(`
 		[
@@ -30,6 +30,5 @@ test("isPersonAdmin", async () => {
 test("getPersonOwnerName returns the admin's profile name for a group-owned person", async () => {
 	let owner = await createAccount({ isCurrentActive: true })
 	let person = await seedPerson(owner, { name: "Ada" })
-	let name = await getPersonOwnerName(person)
-	expect(typeof name).toBe("string")
+	expect(await getPersonOwnerName(person)).toMatchInlineSnapshot(`"Anonymous"`)
 })

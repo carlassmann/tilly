@@ -14,10 +14,14 @@ async function contentsByList(person: co.loaded<typeof Person>) {
 	let loaded = await person.$jazz.ensureLoaded({
 		resolve: { notes: { $each: true }, inactiveNotes: { $each: true } },
 	})
-	return {
-		active: loaded.notes.map(n => n.content),
-		inactive: loaded.inactiveNotes?.map(n => n.content),
-	}
+	let active = loaded.notes.map(n => n.content)
+	let inactive = loaded.inactiveNotes?.map(n => n.content) ?? []
+	return `active: [${active.join(", ")}] · inactive: [${inactive.join(", ")}]`
+}
+
+async function storedContent(noteId: string) {
+	let note = await Note.load(noteId)
+	return note.$isLoaded ? note.content : note.$jazz.loadingState
 }
 
 describe("updateNote", () => {
@@ -65,7 +69,7 @@ describe("updateNote", () => {
 			  },
 			}
 		`)
-		expect(await Note.load(note.$jazz.id)).toMatchObject({ content: "after" })
+		expect(await storedContent(note.$jazz.id)).toMatchInlineSnapshot(`"after"`)
 	})
 
 	test("toggle pin", async () => {
@@ -77,8 +81,9 @@ describe("updateNote", () => {
 			noteId: note.$jazz.id,
 			pinned: true,
 		})
-		expect(result.previous.pinned).toBe(false)
-		expect(result.current.pinned).toBe(true)
+		expect(
+			`pinned ${result.previous.pinned} -> ${result.current.pinned}`,
+		).toMatchInlineSnapshot(`"pinned false -> true"`)
 	})
 
 	test("soft delete moves note from notes to inactiveNotes", async () => {
@@ -86,10 +91,9 @@ describe("updateNote", () => {
 		let note = await seedNote(person, { content: "delete me" })
 
 		await setNoteDeletedAt(person, note.$jazz.id, new Date())
-		expect(await contentsByList(person)).toEqual({
-			active: [],
-			inactive: ["delete me"],
-		})
+		expect(await contentsByList(person)).toMatchInlineSnapshot(
+			`"active: [] · inactive: [delete me]"`,
+		)
 	})
 
 	test("restore moves note back from inactiveNotes", async () => {
@@ -98,10 +102,9 @@ describe("updateNote", () => {
 		await setNoteDeletedAt(person, note.$jazz.id, new Date())
 
 		await setNoteDeletedAt(person, note.$jazz.id, undefined)
-		expect(await contentsByList(person)).toEqual({
-			active: ["restore me"],
-			inactive: [],
-		})
+		expect(await contentsByList(person)).toMatchInlineSnapshot(
+			`"active: [restore me] · inactive: []"`,
+		)
 	})
 
 	test("throws when note not found", async () => {
@@ -112,7 +115,7 @@ describe("updateNote", () => {
 				noteId: "co_zNope",
 				content: "x",
 			}),
-		).rejects.toBeDefined()
+		).rejects.toThrow("note not found")
 	})
 
 	describe("multi-user", () => {
@@ -134,9 +137,9 @@ describe("updateNote", () => {
 			await collaborator.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)
-			expect(await Note.load(note.$jazz.id)).toMatchObject({
-				content: "edited remotely",
-			})
+			expect(await storedContent(note.$jazz.id)).toMatchInlineSnapshot(
+				`"edited remotely"`,
+			)
 		})
 	})
 })

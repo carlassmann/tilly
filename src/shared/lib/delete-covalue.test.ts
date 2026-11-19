@@ -74,10 +74,16 @@ describe("permanent deletion", () => {
 		await permanentlyDeleteNote(deleted)
 
 		let loadedDeleted = await Note.load(deleted.$jazz.id)
-		expect(loadedDeleted?.$jazz.loadingState).toBe("deleted")
-		expect(loadedDeleted?.$isLoaded).toBe(false)
 		let loadedKept = await Note.load(kept.$jazz.id)
-		expect(loadedKept?.$isLoaded ? loadedKept.content : null).toBe("Note 2")
+		expect([
+			`deleted: ${loadedDeleted?.$jazz.loadingState}, isLoaded ${loadedDeleted?.$isLoaded}`,
+			`kept: ${loadedKept?.$isLoaded ? loadedKept.content : null}`,
+		]).toMatchInlineSnapshot(`
+			[
+			  "deleted: deleted, isLoaded false",
+			  "kept: Note 2",
+			]
+		`)
 	})
 
 	test("permanentlyDeleteReminder deletes a reminder", async () => {
@@ -86,7 +92,7 @@ describe("permanent deletion", () => {
 		await permanentlyDeleteReminder(reminder)
 
 		let loaded = await Reminder.load(reminder.$jazz.id)
-		expect(loaded?.$jazz.loadingState).toBe("deleted")
+		expect(loaded?.$jazz.loadingState).toMatchInlineSnapshot(`"deleted"`)
 	})
 
 	test("permanentlyDeletePerson deletes the person with their notes and reminders", async () => {
@@ -98,14 +104,13 @@ describe("permanent deletion", () => {
 		let loadedPerson = await Person.load(person.$jazz.id)
 		let loadedNote = await Note.load(note.$jazz.id)
 		let loadedReminder = await Reminder.load(reminder.$jazz.id)
-		expect(loadedPerson?.$isLoaded).toBe(false)
 		expect([
-			`person: ${loadedPerson?.$jazz.loadingState}`,
+			`person: ${loadedPerson?.$jazz.loadingState}, isLoaded ${loadedPerson?.$isLoaded}`,
 			`note: ${loadedNote?.$jazz.loadingState}`,
 			`reminder: ${loadedReminder?.$jazz.loadingState}`,
 		]).toMatchInlineSnapshot(`
 			[
-			  "person: deleted",
+			  "person: deleted, isLoaded false",
 			  "note: deleted",
 			  "reminder: deleted",
 			]

@@ -84,7 +84,9 @@ describe("Person sharing", () => {
 		test("parsed invite resolves to the original personId", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
 			let parsed = await createInvite(person)
-			expect(parsed.personId).toBe(person.$jazz.id)
+			expect(
+				`resolves to original: ${parsed.personId === person.$jazz.id}`,
+			).toMatchInlineSnapshot(`"resolves to original: true"`)
 		})
 	})
 
@@ -95,10 +97,10 @@ describe("Person sharing", () => {
 			let { invitee, loadedInvitee } = await signUpInvitee()
 
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
-			expect(result.status).toBe("accepted")
-
 			let people = await loadInviteePeople(invitee)
-			expect(people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(true)
+			expect(
+				`${result.status}, in invitee people: ${people.some(p => p?.$jazz.id === person.$jazz.id)}`,
+			).toMatchInlineSnapshot(`"accepted, in invitee people: true"`)
 		})
 
 		test("invitee can edit the shared person (writer role grants write access)", async () => {
@@ -115,7 +117,9 @@ describe("Person sharing", () => {
 
 			setActiveAccount(owner)
 			let reloaded = await Person.load(person.$jazz.id)
-			expect(reloaded?.$isLoaded ? reloaded.name : null).toBe("Ada by invitee")
+			expect(reloaded?.$isLoaded ? reloaded.name : null).toMatchInlineSnapshot(
+				`"Ada by invitee"`,
+			)
 		})
 
 		test("accepting twice is idempotent (already-member, no duplicate in list)", async () => {
@@ -126,13 +130,11 @@ describe("Person sharing", () => {
 			let first = await acceptPersonInvite(loadedInvitee, parsed)
 			let second = await acceptPersonInvite(loadedInvitee, parsed)
 
-			expect(first.status).toBe("accepted")
-			expect(second.status).toBe("already-member")
-
 			let people = await loadInviteePeople(invitee)
-			expect(people.filter(p => p?.$jazz.id === person.$jazz.id)).toHaveLength(
-				1,
-			)
+			let copies = people.filter(p => p?.$jazz.id === person.$jazz.id).length
+			expect(
+				`${first.status} -> ${second.status}, copies: ${copies}`,
+			).toMatchInlineSnapshot(`"accepted -> already-member, copies: 1"`)
 		})
 	})
 
@@ -144,7 +146,6 @@ describe("Person sharing", () => {
 			await acceptPersonInvite(loadedInvitee, parsed)
 
 			let visibleBefore = await Person.load(person.$jazz.id)
-			expect(visibleBefore?.$isLoaded).toBe(true)
 
 			setActiveAccount(owner)
 			removeInviteGroup(
@@ -155,7 +156,9 @@ describe("Person sharing", () => {
 
 			setActiveAccount(invitee)
 			let visibleAfter = await Person.load(person.$jazz.id)
-			expect(visibleAfter?.$jazz.loadingState).toBe("unauthorized")
+			expect(
+				`${visibleBefore?.$jazz.loadingState} -> ${visibleAfter?.$jazz.loadingState}`,
+			).toMatchInlineSnapshot(`"loaded -> unauthorized"`)
 		})
 	})
 
@@ -165,12 +168,7 @@ describe("Person sharing", () => {
 			let parsed = await createInvite(person)
 
 			let pendingBefore = getPendingInviteGroups(person)
-			expect(pendingBefore.some(p => p.groupId === parsed.inviteGroupId)).toBe(
-				true,
-			)
-
 			let withMembersBefore = await getInviteGroupsWithMembers(person)
-			expect(withMembersBefore.length).toBe(0)
 
 			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
@@ -180,14 +178,26 @@ describe("Person sharing", () => {
 			let reloadedPerson = await Person.load(person.$jazz.id)
 			if (!reloadedPerson?.$isLoaded) throw new Error("person gone")
 			let withMembersAfter = await getInviteGroupsWithMembers(reloadedPerson)
-			expect(
-				withMembersAfter.some(g => g.groupId === parsed.inviteGroupId),
-			).toBe(true)
-			expect(
-				withMembersAfter
-					.find(g => g.groupId === parsed.inviteGroupId)
-					?.members.some(m => m.id === invitee.$jazz.id),
-			).toBe(true)
+			let groupAfter = withMembersAfter.find(
+				g => g.groupId === parsed.inviteGroupId,
+			)
+			expect({
+				pendingBefore: pendingBefore.some(
+					p => p.groupId === parsed.inviteGroupId,
+				),
+				groupsWithMembersBefore: withMembersBefore.length,
+				groupWithMembersAfter: groupAfter !== undefined,
+				inviteeIsMember: groupAfter?.members.some(
+					m => m.id === invitee.$jazz.id,
+				),
+			}).toMatchInlineSnapshot(`
+				{
+				  "groupWithMembersAfter": true,
+				  "groupsWithMembersBefore": 0,
+				  "inviteeIsMember": true,
+				  "pendingBefore": true,
+				}
+			`)
 		})
 	})
 
@@ -215,32 +225,35 @@ describe("Person sharing", () => {
 			return person
 		}
 
-		test("isGroupOwned reports false for account-owned persons", async () => {
-			let person = await seedAccountOwnedPerson(owner, "Legacy")
-			let full = await loadFullPerson(person)
-			expect(isGroupOwned(full)).toBe(false)
-		})
-
-		test("isGroupOwned reports true for group-owned persons", async () => {
-			let person = await seedPerson(owner, { name: "Modern" })
-			let full = await loadFullPerson(person)
-			expect(isGroupOwned(full)).toBe(true)
+		test("isGroupOwned is true only for group-owned persons", async () => {
+			let accountOwned = await seedAccountOwnedPerson(owner, "Legacy")
+			let groupOwned = await seedPerson(owner, { name: "Modern" })
+			expect(
+				`account-owned: ${isGroupOwned(await loadFullPerson(accountOwned))}, group-owned: ${isGroupOwned(await loadFullPerson(groupOwned))}`,
+			).toMatchInlineSnapshot(`"account-owned: false, group-owned: true"`)
 		})
 
 		test("inviting an account-owned person migrates it and yields a working link", async () => {
 			let original = await seedAccountOwnedPerson(owner, "Legacy")
 			let parsed = await createInvite(original)
-			expect(parsed.personId).not.toBe(original.$jazz.id)
-
 			let migrated = await Person.load(parsed.personId)
-			expect(migrated?.$isLoaded).toBe(true)
-			if (!migrated?.$isLoaded) return
-			expect(migrated.name).toBe("Legacy")
-			expect(isGroupOwned(migrated)).toBe(true)
+			if (!migrated?.$isLoaded) throw new Error("migrated person not loaded")
 
 			let { loadedInvitee } = await signUpInvitee()
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
-			expect(result.status).toBe("accepted")
+			expect({
+				isNewPerson: parsed.personId !== original.$jazz.id,
+				name: migrated.name,
+				groupOwned: isGroupOwned(migrated),
+				status: result.status,
+			}).toMatchInlineSnapshot(`
+				{
+				  "groupOwned": true,
+				  "isNewPerson": true,
+				  "name": "Legacy",
+				  "status": "accepted",
+				}
+			`)
 		})
 	})
 })

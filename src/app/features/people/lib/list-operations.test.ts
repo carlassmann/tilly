@@ -110,7 +110,7 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloaded = await bob.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloaded.summary).toBe("colleague")
+		expect(reloaded.summary).toMatchInlineSnapshot(`"colleague"`)
 	})
 
 	test("addTagToNewlySelectedPeople adds tag only to newly selected", async () => {
@@ -136,10 +136,10 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloadedAlice = await alice.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloadedAlice.summary).toBe("friend #new")
-
 		let reloadedBob = await bob.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloadedBob.summary).toBe("colleague #old")
+		expect(
+			`Alice: ${reloadedAlice.summary} | Bob: ${reloadedBob.summary}`,
+		).toMatchInlineSnapshot(`"Alice: friend #new | Bob: colleague #old"`)
 	})
 
 	test("renameTagForRemainingPeople renames tag for selected people", async () => {
@@ -163,6 +163,6 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloaded = await alice.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloaded.summary).toBe("friend #new")
+		expect(reloaded.summary).toMatchInlineSnapshot(`"friend #new"`)
 	})
 })

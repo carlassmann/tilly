@@ -59,15 +59,19 @@ async function ensureInactiveLists(person: co.loaded<typeof Person>) {
 }
 
 describe("isStale", () => {
-	test("returns true for dates older than 30 days", () => {
-		expect(isStale(daysAgo(31))).toBe(true)
-		expect(isStale(daysAgo(60))).toBe(true)
-	})
-
-	test("returns false for dates within 30 days", () => {
-		expect(isStale(daysAgo(29))).toBe(false)
-		expect(isStale(daysAgo(0))).toBe(false)
-		expect(isStale(new Date())).toBe(false)
+	test("is true only for dates older than 30 days", () => {
+		let table = [60, 31, 29, 0].map(
+			days => `${days} days ago -> ${isStale(daysAgo(days))}`,
+		)
+		expect([...table, `now -> ${isStale(new Date())}`]).toMatchInlineSnapshot(`
+			[
+			  "60 days ago -> true",
+			  "31 days ago -> true",
+			  "29 days ago -> false",
+			  "0 days ago -> false",
+			  "now -> false",
+			]
+		`)
 	})
 })
 
@@ -94,10 +98,9 @@ describe("cleanupInactiveLists", () => {
 				root: { people: { $each: true }, inactivePeople: { $each: true } },
 			},
 		})
-		expect({
-			people: root.people.map(p => p.name),
-			inactivePeople: root.inactivePeople?.map(p => p.name),
-		}).toEqual({ people: ["Active"], inactivePeople: ["Ada"] })
+		expect(
+			`people: ${root.people.map(p => p.name)} | inactive: ${root.inactivePeople?.map(p => p.name)}`,
+		).toMatchInlineSnapshot(`"people: Active | inactive: Ada"`)
 	})
 
 	test("moves deleted notes and deleted or done reminders to inactive lists", async () => {

@@ -59,19 +59,21 @@ describe("registerNotificationSettingsWithServer", () => {
 			"test-user-123",
 		)
 
-		expect(result.isOk()).toBe(true)
-
-		let loadedServer = await serverAccount.$jazz.ensureLoaded({
-			resolve: { root: { notificationSettingsRefsV2: { $each: true } } },
-		})
-		let refs = loadedServer.root.notificationSettingsRefsV2
-		let refEntries = refs ? Object.entries(refs) : []
-		expect(refEntries.length).toBe(1)
-		expect(refEntries[0]?.[0]).toBe(notificationSettings.$jazz.id)
-		expect(refEntries[0]?.[1]?.notificationSettings?.$jazz.id).toBe(
-			notificationSettings.$jazz.id,
+		let settingsId = notificationSettings.$jazz.id
+		let refs = await loadRefs(serverAccount)
+		let refLines = Object.entries(refs ?? {}).map(([key, ref]) =>
+			[key, ref?.notificationSettings?.$jazz.id, ref?.userId]
+				.join(" -> ")
+				.replaceAll(settingsId, "<settingsId>"),
 		)
-		expect(refEntries[0]?.[1]?.userId).toBe("test-user-123")
+		expect({ ok: result.isOk(), refLines }).toMatchInlineSnapshot(`
+			{
+			  "ok": true,
+			  "refLines": [
+			    "<settingsId> -> <settingsId> -> test-user-123",
+			  ],
+			}
+		`)
 	})
 
 	test("updates lastSyncedAt for existing registration", async () => {
@@ -100,12 +102,7 @@ describe("registerNotificationSettingsWithServer", () => {
 			notificationSettings.$jazz.id,
 			"test-user-123",
 		)
-		expect(firstResult.isOk()).toBe(true)
-
-		let loadedServer = await serverAccount.$jazz.ensureLoaded({
-			resolve: { root: { notificationSettingsRefsV2: { $each: true } } },
-		})
-		let refs = loadedServer.root.notificationSettingsRefsV2
+		let refs = await loadRefs(serverAccount)
 		let firstSyncTime = refs?.[notificationSettings.$jazz.id]?.lastSyncedAt
 
 		await new Promise(r => setTimeout(r, 10))
@@ -116,16 +113,19 @@ describe("registerNotificationSettingsWithServer", () => {
 			"test-user-123",
 		)
 
-		loadedServer = await serverAccount.$jazz.ensureLoaded({
-			resolve: { root: { notificationSettingsRefsV2: { $each: true } } },
-		})
-
-		refs = loadedServer.root.notificationSettingsRefsV2
-		let refEntries = refs ? Object.entries(refs) : []
-		expect(refEntries.length).toBe(1)
-
+		refs = await loadRefs(serverAccount)
 		let secondSyncTime = refs?.[notificationSettings.$jazz.id]?.lastSyncedAt
-		expect(secondSyncTime?.getTime()).toBeGreaterThan(firstSyncTime!.getTime())
+		expect({
+			firstOk: firstResult.isOk(),
+			refCount: Object.keys(refs ?? {}).length,
+			lastSyncedAtAdvanced: secondSyncTime! > firstSyncTime!,
+		}).toMatchInlineSnapshot(`
+			{
+			  "firstOk": true,
+			  "lastSyncedAtAdvanced": true,
+			  "refCount": 1,
+			}
+		`)
 	})
 
 	test("returns error when server cannot access settings", async () => {
@@ -148,16 +148,13 @@ describe("registerNotificationSettingsWithServer", () => {
 			"test-user-123",
 		)
 
-		expect(result.isErr()).toBe(true)
-		result.match({
-			ok: () => {
-				throw new Error("Expected error")
-			},
-			err: e => {
-				expect(e._tag).toBe("NotFound")
-				expect(e.message).toContain("ensure server has access")
-			},
+		let summary = result.match({
+			ok: () => "ok",
+			err: e => `${e._tag}: ${e.message}`,
 		})
+		expect(summary).toMatchInlineSnapshot(
+			`"NotFound: Failed to load notification settings - ensure server has access"`,
+		)
 	})
 
 	test("can register without active account context", async () => {
@@ -189,6 +186,13 @@ describe("registerNotificationSettingsWithServer", () => {
 			),
 		)
 
-		expect(result.isOk()).toBe(true)
+		expect(result.isOk()).toMatchInlineSnapshot(`true`)
 	})
 })
+
+async function loadRefs(serverAccount: co.loaded<typeof ServerAccount>) {
+	let loadedServer = await serverAccount.$jazz.ensureLoaded({
+		resolve: { root: { notificationSettingsRefsV2: { $each: true } } },
+	})
+	return loadedServer.root.notificationSettingsRefsV2
+}

@@ -89,10 +89,10 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			done: true,
 		})
-		expect(result.current).toMatchObject({
-			done: false,
-			dueAtDate: "2099-01-08",
-		})
+		let { done, dueAtDate } = result.current
+		expect(`done=${done} · due ${dueAtDate}`).toMatchInlineSnapshot(
+			`"done=false · due 2099-01-08"`,
+		)
 		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
 			{
 			  "active": [
@@ -177,7 +177,7 @@ describe("updateReminder", () => {
 				reminderId: "co_zNope",
 				text: "x",
 			}),
-		).rejects.toBeDefined()
+		).rejects.toThrow("reminder not found")
 	})
 
 	test("repeat unit month advances by one month", async () => {
@@ -193,10 +193,11 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			done: true,
 		})
-		expect(result.current.dueAtDate).toBe("2099-02-15")
-
 		let reloaded = await Reminder.load(reminder.$jazz.id)
-		expect(reloaded?.$isLoaded ? reloaded.dueAtDate : null).toBe("2099-02-15")
+		let storedDueAt = reloaded.$isLoaded && reloaded.dueAtDate
+		expect(
+			`returned ${result.current.dueAtDate} · stored ${storedDueAt}`,
+		).toMatchInlineSnapshot(`"returned 2099-02-15 · stored 2099-02-15"`)
 	})
 })
 

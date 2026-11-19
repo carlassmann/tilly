@@ -81,7 +81,9 @@ describe("listReminders", () => {
 			includeDone: false,
 			includeDeleted: false,
 		})
-		expect(summarize(result.reminders)).toEqual(["Ada: past · 2000-01-01"])
+		expect(summarize(result.reminders).join(", ")).toMatchInlineSnapshot(
+			`"Ada: past · 2000-01-01"`,
+		)
 	})
 
 	test("sorted by due date ascending", async () => {
@@ -151,7 +153,9 @@ describe("listReminders", () => {
 			includeDone: true,
 			includeDeleted: false,
 		})
-		expect(summarize(result.reminders)).toEqual(["Ada: x · 2099-01-01 · done"])
+		expect(summarize(result.reminders).join(", ")).toMatchInlineSnapshot(
+			`"Ada: x · 2099-01-01 · done"`,
+		)
 	})
 })
 

@@ -26,10 +26,9 @@ describe("updatePerson", () => {
 				root: { people: { $each: true }, inactivePeople: { $each: true } },
 			},
 		})
-		return {
-			active: root.people.map(p => p.name),
-			inactive: root.inactivePeople?.map(p => p.name),
-		}
+		let active = root.people.map(p => p.name)
+		let inactive = root.inactivePeople?.map(p => p.name) ?? []
+		return `active: [${active.join(", ")}] · inactive: [${inactive.join(", ")}]`
 	}
 
 	test("updates name and summary, returns previous + current", async () => {
@@ -74,14 +73,18 @@ describe("updatePerson", () => {
 			personId: person.$jazz.id,
 			name: "Ada L.",
 		})
-		expect(result.current.summary).toBe("keep this")
+		expect(
+			`${result.current.name} · ${result.current.summary}`,
+		).toMatchInlineSnapshot(`"Ada L. · keep this"`)
 	})
 
 	test("soft delete moves person from active to inactivePeople", async () => {
 		let person = await seedPerson(owner, { name: "Bye" })
 
 		await setPersonDeletedAt(person.$jazz.id, new Date())
-		expect(await namesByList()).toEqual({ active: [], inactive: ["Bye"] })
+		expect(await namesByList()).toMatchInlineSnapshot(
+			`"active: [] · inactive: [Bye]"`,
+		)
 	})
 
 	test("restore moves back from inactivePeople to active", async () => {
@@ -89,13 +92,15 @@ describe("updatePerson", () => {
 		await setPersonDeletedAt(person.$jazz.id, new Date())
 
 		await setPersonDeletedAt(person.$jazz.id, undefined)
-		expect(await namesByList()).toEqual({ active: ["Back"], inactive: [] })
+		expect(await namesByList()).toMatchInlineSnapshot(
+			`"active: [Back] · inactive: []"`,
+		)
 	})
 
 	test("throws when person not found", async () => {
 		await expect(
 			updatePerson(owner, { personId: "co_zNope", name: "x" }),
-		).rejects.toBeDefined()
+		).rejects.toThrow("person not found")
 	})
 
 	describe("multi-user", () => {
@@ -116,7 +121,9 @@ describe("updatePerson", () => {
 
 			setActiveAccount(owner)
 			let reloaded = await Person.load(person.$jazz.id)
-			expect(reloaded?.$isLoaded ? reloaded.name : null).toBe("Edited by other")
+			expect(reloaded.$isLoaded && reloaded.name).toMatchInlineSnapshot(
+				`"Edited by other"`,
+			)
 		})
 	})
 })

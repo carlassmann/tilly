@@ -52,20 +52,39 @@ test("demoFrameAt walks through the scenes, keeping what earlier scenes added", 
 })
 
 test("demoFrameAt types the note into the dialog before saving its full text", () => {
-	let text = demoStory("en").notes.sarahInterview.text
-	expect(text.startsWith(frameAt("log", 0.4).dialog?.text ?? "x")).toBe(true)
-	expect(frameAt("log", 0.9).notes.sarahInterview).toBe(text)
-	expect(frameAt("talk", 0).notes.sarahInterview).toBe(text)
+	let table = [
+		`log @ 0.4 dialog: ${frameAt("log", 0.4).dialog?.text}`,
+		`log @ 0.9 note: ${frameAt("log", 0.9).notes.sarahInterview}`,
+		`talk @ 0 note: ${frameAt("talk", 0).notes.sarahInterview}`,
+		`story note: ${demoStory("en").notes.sarahInterview.text}`,
+	]
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "log @ 0.4 dialog: Has a job interview at a design agency on Thursday.",
+		  "log @ 0.9 note: Has a job interview at a design agency on Thursday. A bit nervous about the portfolio part.",
+		  "talk @ 0 note: Has a job interview at a design agency on Thursday. A bit nervous about the portfolio part.",
+		  "story note: Has a job interview at a design agency on Thursday. A bit nervous about the portfolio part.",
+		]
+	`)
 })
 
 test("demoFrameAt puts the agent's answer after its tool calls", () => {
 	let talk = demoSceneIds.indexOf("talk")
 	let kinds = demoFrameAt("de", talk, 1).chat.entries.map(entry => entry.kind)
-	expect(kinds).toEqual(["user", "note", "note", "reminder", "assistant"])
+	expect(kinds.join(" -> ")).toMatchInlineSnapshot(
+		`"user -> note -> note -> reminder -> assistant"`,
+	)
 })
 
 test("typedText types whole words", () => {
-	expect(typedText("Moving to Berlin", 0)).toBe("")
-	expect(typedText("Moving to Berlin", 0.3)).toBe("Moving")
-	expect(typedText("Moving to Berlin", 1)).toBe("Moving to Berlin")
+	let table = [0, 0.3, 1].map(
+		progress => `${progress} -> "${typedText("Moving to Berlin", progress)}"`,
+	)
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "0 -> """,
+		  "0.3 -> "Moving"",
+		  "1 -> "Moving to Berlin"",
+		]
+	`)
 })

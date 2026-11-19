@@ -6,6 +6,8 @@ import react from "eslint-plugin-react"
 import globals from "globals"
 import astro from "eslint-plugin-astro"
 import architecture from "eslint-plugin-architecture"
+import vitest from "@vitest/eslint-plugin"
+import eslintComments from "@eslint-community/eslint-plugin-eslint-comments"
 
 let featureRoots = [
 	{
@@ -19,6 +21,47 @@ let featureRoots = [
 ]
 
 let architectureOptions = { featureRoots }
+
+// Unit tests are expect tests: snapshot real output instead of hand-writing
+// expected values. A must-hold rule may opt out with a disable comment whose
+// description says why (see docs/testing.md).
+let handWrittenMatchers = [
+	"toBe",
+	"toEqual",
+	"toStrictEqual",
+	"toMatchObject",
+	"toHaveLength",
+	"toContain",
+	"toContainEqual",
+	"toHaveProperty",
+	"toBeTruthy",
+	"toBeFalsy",
+	"toBeDefined",
+	"toBeUndefined",
+	"toBeNull",
+	"toBeNaN",
+	"toBeInstanceOf",
+	"toBeGreaterThan",
+	"toBeGreaterThanOrEqual",
+	"toBeLessThan",
+	"toBeLessThanOrEqual",
+]
+let matcherModifiers = [
+	"",
+	"not.",
+	"resolves.",
+	"resolves.not.",
+	"rejects.",
+	"rejects.not.",
+]
+let preferExpectTests = Object.fromEntries(
+	matcherModifiers.flatMap(modifier =>
+		handWrittenMatchers.map(matcher => [
+			modifier + matcher,
+			"Use toMatchInlineSnapshot. For a must-hold rule, disable with `-- invariant: <why>` (docs/testing.md).",
+		]),
+	),
+)
 
 let commonRules = {
 	"@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -207,6 +250,14 @@ export default [
 		},
 		plugins: { "@typescript-eslint": tseslint },
 		rules: { ...tseslint.configs.recommended.rules, ...commonRules },
+	},
+	{
+		files: ["src/**/*.test.{ts,tsx}"],
+		plugins: { vitest, "@eslint-community/eslint-comments": eslintComments },
+		rules: {
+			"vitest/no-restricted-matchers": ["error", preferExpectTests],
+			"@eslint-community/eslint-comments/require-description": "error",
+		},
 	},
 	{
 		ignores: [

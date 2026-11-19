@@ -1,75 +1,36 @@
-import { describe, test, expect } from "vitest"
+import { test, expect } from "vitest"
 import { createIntl } from "@ccssmnn/intl"
 import { messagesEn, messagesDe } from "./messages"
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-describe("messages parsing", () => {
-	test("all English messages can be parsed without errors", () => {
-		let compilationErrors: string[] = []
-
-		// Capture console.warn calls to detect MessageFormat compilation errors
-		let originalWarn = console.warn
-		let originalTable = console.table
-		console.warn = (message: string) => {
-			if (
-				message.includes("MessageFormat compilation completed with") &&
-				message.includes("error")
-			) {
-				compilationErrors.push(message)
-			}
-		}
-		let compilationDetails: any[] = []
-		console.table = (data: any) => {
-			compilationDetails.push(...(Array.isArray(data) ? data : [data]))
-		}
-
-		try {
-			// Just creating the intl function tests message compilation
-			createIntl(messagesEn, "en")
-
-			// If no compilation errors were logged, all messages parsed successfully
-			if (compilationErrors.length > 0) {
-				console.log("Compilation details:", compilationDetails)
-			}
-			expect(compilationErrors).toEqual([])
-		} finally {
-			console.warn = originalWarn
-			console.table = originalTable
-		}
-	})
-
-	test("all German messages can be parsed without errors", () => {
-		let compilationErrors: string[] = []
-
-		// Capture console.warn calls to detect MessageFormat compilation errors
-		let originalWarn = console.warn
-		let originalTable = console.table
-		console.warn = (message: string) => {
-			if (
-				message.includes("MessageFormat compilation completed with") &&
-				message.includes("error")
-			) {
-				compilationErrors.push(message)
-			}
-		}
-		let compilationDetails: any[] = []
-		console.table = (data: any) => {
-			compilationDetails.push(...(Array.isArray(data) ? data : [data]))
-		}
-
-		try {
-			// Just creating the intl function tests message compilation
-			createIntl(messagesDe, "de")
-
-			// If no compilation errors were logged, all messages parsed successfully
-			if (compilationErrors.length > 0) {
-				console.log("Compilation details:", compilationDetails)
-			}
-			expect(compilationErrors).toEqual([])
-		} finally {
-			console.warn = originalWarn
-			console.table = originalTable
-		}
-	})
+test.each([
+	["English", () => createIntl(messagesEn, "en")],
+	["German", () => createIntl(messagesDe, "de")],
+])("all %s messages can be parsed without errors", (_, compile) => {
+	expect(compilationErrorsOf(compile)).toMatchInlineSnapshot(`[]`)
 })
+
+// createIntl reports MessageFormat compilation errors via console.warn and
+// details via console.table instead of throwing.
+function compilationErrorsOf(compile: () => void) {
+	let errors: unknown[] = []
+	let originalWarn = console.warn
+	let originalTable = console.table
+	console.warn = (message: string) => {
+		if (
+			message.includes("MessageFormat compilation completed with") &&
+			message.includes("error")
+		) {
+			errors.push(message)
+		}
+	}
+	console.table = (data: unknown) => {
+		errors.push(...(Array.isArray(data) ? data : [data]))
+	}
+	try {
+		compile()
+	} finally {
+		console.warn = originalWarn
+		console.table = originalTable
+	}
+	return errors
+}

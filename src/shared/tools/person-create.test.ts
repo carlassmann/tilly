@@ -32,19 +32,22 @@ describe("createPerson", () => {
 		let { root } = await owner.$jazz.ensureLoaded({
 			resolve: { root: { people: { $each: true } } },
 		})
-		expect(root.people.map(p => p.$jazz.id)).toEqual([result.current.personId])
-		expect(root.people[0]?.name).toBe("Ada Lovelace")
+		let describeStored = (p: (typeof root.people)[number]) =>
+			`${p.$jazz.id === result.current.personId ? "created" : "other"}: ${p.name}`
+		expect(root.people.map(describeStored).join(", ")).toMatchInlineSnapshot(
+			`"created: Ada Lovelace"`,
+		)
 	})
 
 	test("created person reloads from its ID with content intact", async () => {
 		let result = await createPerson(owner, { name: "Grace" })
 
 		let reloaded = await Person.load(result.current.personId)
-		expect(reloaded?.$isLoaded && reloaded.name).toBe("Grace")
+		expect(reloaded.$isLoaded && reloaded.name).toMatchInlineSnapshot(`"Grace"`)
 	})
 
 	test("summary is optional", async () => {
 		let result = await createPerson(owner, { name: "Anon" })
-		expect(result.current.summary).toBeUndefined()
+		expect(result.current.summary).toMatchInlineSnapshot(`undefined`)
 	})
 })
