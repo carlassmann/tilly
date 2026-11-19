@@ -1,0 +1,29 @@
+---
+import "#app/index.css"
+import { DemoPhoneApp } from "#www/demo/demo-phone-app"
+
+export const prerender = true
+---
+
+<!-- The phone in the landing page demo. It runs in a frame at phone size so
+     the app's mobile layout applies; the landing page drives it by messages. -->
+<!doctype html>
+<html lang="en" class="bg-background">
+	<head>
+		<title>Tilly</title>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+	</head>
+	<body class="bg-background text-foreground select-none">
+		<DemoPhoneApp client:only="react" />
+	</body>
+</html>
+
+<style is:global>
+	/* A focused field drops the app's bottom bars onto the keyboard, which the
+	   demo phone doesn't have; keep them clear of its rounded screen edge. */
+	.fixed.bottom-1 {
+		bottom: calc(var(--spacing) * 6);
+	}
+</style>

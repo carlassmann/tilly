@@ -1,10 +1,29 @@
+import { createContext, use, type ReactNode } from "react"
 import { useAuth } from "@clerk/clerk-react"
 import { useOnlineStatus } from "#app/hooks/use-online-status"
 import { PUBLIC_ENABLE_PAYWALL } from "astro:env/client"
 
-export { useHasPlusAccess }
+export { useHasPlusAccess, ClerkPlusAccess, PlusAccess }
+export type { PlusAccessState }
 
-function useHasPlusAccess(): { hasPlusAccess: boolean; isLoading: boolean } {
+type PlusAccessState = { hasPlusAccess: boolean; isLoading: boolean }
+
+// The app reads plus access from Clerk; the website demo has no Clerk and
+// provides its own value.
+let PlusAccess = createContext<PlusAccessState | null>(null)
+
+function useHasPlusAccess(): PlusAccessState {
+	let access = use(PlusAccess)
+	if (!access) throw new Error("useHasPlusAccess needs a PlusAccess provider")
+	return access
+}
+
+function ClerkPlusAccess({ children }: { children: ReactNode }) {
+	let access = useClerkPlusAccess()
+	return <PlusAccess value={access}>{children}</PlusAccess>
+}
+
+function useClerkPlusAccess(): PlusAccessState {
 	let clerkAuth = useAuth()
 	let isOnline = useOnlineStatus()
 

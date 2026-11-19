@@ -91,6 +91,7 @@ function ActiveReminder({
 		>
 			<Collapsible.Root open={isExpanded} onOpenChange={onOpenChange}>
 				<SwipeableListItem
+					swipeKey={reminder.$jazz.id}
 					rightAction={{
 						variant: "success",
 						icon: <CheckLg />,

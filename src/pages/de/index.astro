@@ -1,11 +1,9 @@
 ---
 import MinimalMarketingLayout from "#www/layouts/MinimalMarketingLayout.astro"
 import { Navbar } from "#www/components/Navbar"
-import { Hero } from "#www/components/Hero"
-import { SyntwinCTA } from "#www/components/SyntwinCTA"
+import ProductDemo from "#www/components/ProductDemo.astro"
 import { ContentWithTestimonial } from "#www/components/ContentWithTestimonial"
 import { FeatureGridOffset } from "#www/components/FeatureGridOffset"
-import { FeaturesWithProductScreenshot } from "#www/components/FeaturesWithProductScreenshot"
 import { Testimonials } from "#www/components/Testimonials"
 import { FeatureGridCentered } from "#www/components/FeatureGridCentered"
 import { Pricing } from "#www/components/Pricing"
@@ -41,39 +39,65 @@ import { Footer } from "#www/components/Footer"
 		]}
 	/>
 
-	<div class="pt-3 pb-12 md:pb-24">
-		<Hero
-			client:load
-			badge={{
+	<ProductDemo
+		locale="de"
+		hero={{
+			badge: {
 				text: "Tilly ist Open Source",
 				href: "https://github.com/carlassmann/tilly",
 				description: "Schau dir den Code an",
-			}}
-			title="Vergiss nie wieder, dich zu melden"
-			description="Deine Freunde erzählen dir wichtige Dinge. Tilly hilft dir, dich zu erinnern und nachzufragen, wenn es darauf ankommt."
-			primaryCta={{
+			},
+			title: "Vergiss nie wieder, dich zu melden",
+			description: "Deine Freunde erzählen dir wichtige Dinge. Tilly hilft dir, dich zu erinnern und nachzufragen, wenn es darauf ankommt.",
+			primaryCta: {
 				text: "Jetzt loslegen",
 				href: "/app",
-			}}
-			secondaryCta={{
+			},
+			secondaryCta: {
 				text: "Mehr erfahren",
-				href: "#features",
-			}}
-			media={{
-				kind: "image",
-				src: "/images/screenshots/de-people.webp",
-				alt: "Telefon mit der Tilly-Personenliste",
-				loading: "eager",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
-		/>
-	</div>
-	<SyntwinCTA
-		title="Sprich mit meinem Syntwin über Tilly"
-		description="Mein Syntwin beantwortet deine Fragen und zeigt dir die App, in meinen Worten."
-		creator="Carl, der Tilly gebaut hat"
-		action="Gespräch starten"
+				href: "#tour",
+			},
+		}}
+		title="Tilly in Aktion"
+		end={{
+			title: "Jetzt du",
+			body: "Das Handy ist die echte App. Klick dich durch, so lange du willst, oder starte Tilly mit deinen eigenen Freunden.",
+			touchBody: "Tipp aufs Handy, um die echte App auszuprobieren, oder starte mit deinen eigenen Freunden.",
+			app: { text: "Jetzt loslegen", href: "/app" },
+			syntwin: "Frag meinen Syntwin zu Tilly",
+		}}
+		scenes={[
+			{
+				id: "intro",
+				title: "Vergiss nie wieder, dich zu melden",
+				body: "Deine Freunde erzählen dir wichtige Dinge. Tilly hilft dir, dich zu erinnern und nachzufragen, wenn es darauf ankommt.",
+			},
+			{
+				id: "log",
+				title: "Notiere, was Freunde erzählen",
+				body: "Sarah erzählt beim Kaffee von ihrem Vorstellungsgespräch. Halte es in ein paar Worten auf ihrer Seite fest.",
+			},
+			{
+				id: "remind",
+				title: "Lass dich ans Nachfragen erinnern",
+				body: "Leg eine Erinnerung an und Tilly meldet sich am richtigen Tag, damit du fragst, wie es lief.",
+			},
+			{
+				id: "talk",
+				title: "Oder erzähl es einfach Tilly",
+				body: "Nach dem Abendessen sagst du, was du gehört hast. Der Tilly Agent findet die richtigen Personen, legt Notizen an und schlägt Erinnerungen vor.",
+			},
+			{
+				id: "catchup",
+				title: "Vorbereitet ins nächste Treffen",
+				body: "Frag nach einer Person und erfahre, was wichtig ist, mit ein paar Fragen für euer Gespräch.",
+			},
+			{
+				id: "today",
+				title: "Sei der Mensch, der sich erinnert",
+				body: "Jeden Tag siehst du, bei wem du dich melden solltest.",
+			},
+		]}
 	/>
 	<div id="story" class="py-12 md:py-24">
 		<ContentWithTestimonial
@@ -128,36 +152,6 @@ import { Footer } from "#www/components/Footer"
 		/>
 	</div>
 
-	<div class="py-12 md:py-24">
-		<FeaturesWithProductScreenshot
-			badge="Wie es funktioniert"
-			title="Einfach. Praktisch. Funktioniert wirklich."
-			features={[
-				{
-					name: "Notiere, was Freunde dir erzählen",
-					description:
-						"Speichere Notizen für jede Person. Behalte Wichtiges im Blick – nicht nur die Telefonnummer.",
-				},
-				{
-					name: "Lass dich erinnern nachzufragen",
-					description:
-						"Setze Erinnerungen, damit du keine wichtigen Momente verpasst.",
-				},
-				{
-					name: "Stärkere Freundschaften aufbauen",
-					description:
-						"Sei da, wenn es darauf ankommt. Sei der Freund, der sich erinnert.",
-				},
-			]}
-			media={{
-				kind: "image",
-				src: "/images/screenshots/de-person.webp",
-				alt: "Telefon mit den Tilly-Notizen zu einer Person",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
-		/>
-	</div>
 	<div class="py-24" id="features">
 		<FeatureGridCentered
 			title="Einfach einfach"
@@ -223,42 +217,6 @@ import { Footer } from "#www/components/Footer"
 				},
 				{ quote: "Das ist ein Cheat-Code, um ein besserer Freund zu sein!" },
 			]}
-		/>
-	</div>
-	<div class="py-12 md:py-24">
-		<FeaturesWithProductScreenshot
-			client:load
-			badge="Tilly Agent: Dein Freundschaftsassistent"
-			title="Der Tilly Agent liest und schreibt in deinem Freundebuch."
-			features={[
-				{
-					name: "Einfach sprechen:",
-					description:
-						"'Sarah hat ein neues Projekt, Sophie hat einen neuen Kunden, sie wirkt entspannter.'",
-				},
-				{
-					name: "Tilly organisiert:",
-					description:
-						"Findet Sarah und Sophie, legt Notizen an, schlägt Erinnerungen vor.",
-				},
-				{
-					name: "Vor einem Treffen:",
-					description:
-						"'Bringe mich bei Sarah auf den neuesten Stand' – Dann weißt du, was du fragen kannst.",
-				},
-				{
-					name: "Beim Kontaktieren:",
-					description: "'Hilf mir, Sophie zu schreiben' – bekomme Vorschläge.",
-				},
-			]}
-			closing="Der Bedienkomfort ist real. So einfach, dass du es wirklich nutzt."
-			media={{
-				kind: "image",
-				src: "/images/screenshots/de-chat.webp",
-				alt: "Telefon mit dem Tilly-Agent-Chat",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
 		/>
 	</div>
 	<div id="experience" class="py-24">
