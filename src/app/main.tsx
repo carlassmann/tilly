@@ -22,6 +22,7 @@ import { PWAInstallHint } from "#app/components/pwa-install-hint"
 import { Toaster } from "#shared/ui/sonner"
 import { MainErrorBoundary } from "#app/components/main-error-boundary"
 import { SyntwinGuide } from "#app/components/syntwin-guide"
+import { ClerkPlusAccess } from "#app/hooks/use-plus-access"
 
 export function PWA() {
 	return (
@@ -30,7 +31,9 @@ export function PWA() {
 				publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}
 				afterSignOutUrl="/app"
 			>
-				<JazzWithClerk />
+				<ClerkPlusAccess>
+					<JazzWithClerk />
+				</ClerkPlusAccess>
 			</ClerkProvider>
 		</MainErrorBoundary>
 	)

@@ -10,6 +10,20 @@ import node from "@astrojs/node"
 let useNodeAdapter = process.env.ASTRO_ADAPTER === "node"
 let runtimeAdapter = useNodeAdapter ? node({ mode: "standalone" }) : vercel()
 
+// `work` serves the dev server on per-workspace URLs (e.g. over the tailnet)
+// and passes them in WORK_URLS.
+function workHosts(): string[] {
+	let urls = process.env.WORK_URLS
+	if (!urls) return []
+	try {
+		return Object.values(JSON.parse(urls) as Record<string, string>).map(
+			url => new URL(url).hostname,
+		)
+	} catch {
+		return []
+	}
+}
+
 export default defineConfig({
 	output: "server",
 	adapter: runtimeAdapter,
@@ -22,7 +36,9 @@ export default defineConfig({
 		},
 	},
 	vite: {
-		server: { allowedHosts: [".ngrok-free.app"] },
+		server: {
+			allowedHosts: [".ngrok-free.app", ...workHosts()],
+		},
 		plugins: [
 			tanstackRouter({
 				target: "react",

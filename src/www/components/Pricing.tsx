@@ -1,4 +1,8 @@
-import { TypographyH2, TypographyP } from "#shared/ui/typography"
+import {
+	TypographyH2,
+	TypographyLead,
+	TypographyP,
+} from "#shared/ui/typography"
 import { Card, CardContent, CardFooter } from "#shared/ui/card"
 import { buttonVariants } from "#shared/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -28,22 +32,22 @@ interface Props {
 
 function Pricing({ title, subtitle, ctaText, tiers }: Props) {
 	return (
-		<div className="container mx-auto px-6 md:px-8">
-			<div className="mx-auto max-w-4xl text-center">
+		<div className="container mx-auto max-w-5xl px-6 md:px-8">
+			<div className="max-w-2xl">
 				<TypographyH2>{title}</TypographyH2>
-				<TypographyP>{subtitle}</TypographyP>
+				<TypographyLead className="mt-4">{subtitle}</TypographyLead>
 			</div>
-			<div className="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 lg:mt-20 lg:max-w-4xl lg:grid-cols-2 lg:gap-x-8 lg:gap-y-0">
+			<div className="mt-12 grid grid-cols-1 gap-4 md:mt-16 md:grid-cols-2">
 				{tiers.map(tier => (
 					<Card
 						key={tier.id}
 						className={cn(
-							"bg-card/60 md:mx-0",
+							"bg-card/60 rounded-3xl",
 							tier.featured &&
-								"bg-card border-primary ring-primary/20 relative scale-105 transform shadow-2xl ring-1",
+								"bg-primary/5 border-primary ring-primary/20 shadow-primary/10 shadow-2xl ring-1",
 						)}
 					>
-						<CardContent className="p-8 md:p-10">
+						<CardContent className="flex h-full flex-col p-8 md:p-10">
 							<h3 id={tier.id} className="text-primary font-semibold">
 								{tier.name}
 							</h3>
@@ -87,7 +91,7 @@ function Pricing({ title, subtitle, ctaText, tiers }: Props) {
 									</li>
 								))}
 							</ul>
-							<CardFooter className="mt-8 justify-end">
+							<CardFooter className="mt-auto px-0 pt-8">
 								<a
 									href={tier.href}
 									aria-describedby={tier.id}
@@ -95,6 +99,7 @@ function Pricing({ title, subtitle, ctaText, tiers }: Props) {
 										buttonVariants({
 											variant: tier.featured ? "default" : "secondary",
 										}),
+										"h-12 w-full text-base pointer-fine:h-12",
 									)}
 								>
 									{tier.ctaText || ctaText || "Get started"}

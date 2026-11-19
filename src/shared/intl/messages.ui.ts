@@ -3,10 +3,6 @@ import { messages, translate } from "@ccssmnn/intl"
 export { baseUiMessages, deUiMessages }
 
 const baseUiMessages = messages({
-	// Marketing / website UI
-	"marketing.nav.menuDescription":
-		"Open the navigation to choose where you want to go.",
-
 	// Common UI messages
 	"common.cancel": "Cancel",
 	"common.save": "Save",
@@ -174,10 +170,6 @@ const baseUiMessages = messages({
 })
 
 const deUiMessages = translate(baseUiMessages, {
-	// Marketing / website UI
-	"marketing.nav.menuDescription":
-		"Öffne die Navigation, um einen Bereich auszuwählen.",
-
 	// Common UI messages
 	"common.cancel": "Abbrechen",
 	"common.save": "Speichern",

@@ -8,6 +8,8 @@ import {
 	type MotionValue,
 } from "motion/react"
 import {
+	createContext,
+	use,
 	useCallback,
 	useEffect,
 	useId,
@@ -19,7 +21,7 @@ import { useWebHaptics } from "web-haptics/react"
 import { cn } from "#app/lib/utils"
 import { buttonVariants } from "#shared/ui/button"
 
-export { SwipeableListItem, useSafariSwipeHack }
+export { SwipeableListItem, SwipePreview, useSafariSwipeHack }
 export type { SwipeAction, SwipeableListItemProps }
 
 type SwipeAction = {
@@ -34,13 +36,20 @@ type SwipeableListItemProps = {
 	rightAction?: SwipeAction
 	leftAction?: SwipeAction
 	onClick?: () => void
+	// Names the row for a SwipePreview.
+	swipeKey?: string
 }
+
+// Holds rows open by a share of their width without a finger on them, so the
+// website's demo can show the gesture. Keyed by the rows' swipeKey.
+let SwipePreview = createContext<Record<string, number>>({})
 
 function SwipeableListItem({
 	children,
 	rightAction,
 	leftAction,
 	onClick,
+	swipeKey,
 }: SwipeableListItemProps) {
 	let prefersReducedMotion = useReducedMotion()
 
@@ -148,6 +157,9 @@ function SwipeableListItem({
 		if (leftActionsRef.current)
 			leftActionsRef.current.dataset.baseWidth = String(leftBaseWidth)
 	}, [leftBaseWidth])
+
+	let preview = use(SwipePreview)[swipeKey ?? ""]
+	useSwipePreview(preview, swipeAmount, itemRef, setIsFull)
 
 	let rightPointerEvents = useTransform(swipeAmount, v =>
 		v > 5 ? "auto" : "none",
@@ -443,6 +455,28 @@ function SwipeableListItem({
 }
 
 // -- Hooks --
+
+function useSwipePreview(
+	share: number | undefined,
+	swipeAmount: MotionValue<number>,
+	itemRef: React.RefObject<HTMLDivElement | null>,
+	setIsFull: (isFull: boolean) => void,
+) {
+	let isPreviewing = useRef(false)
+	useEffect(() => {
+		if (share === undefined) {
+			if (!isPreviewing.current) return
+			isPreviewing.current = false
+			setIsFull(false)
+			animate(swipeAmount, 0, SPRING)
+			return
+		}
+		isPreviewing.current = true
+		setIsFull(Math.abs(share) > FULL_SWIPE_THRESHOLD)
+		let width = itemRef.current?.getBoundingClientRect().width ?? 0
+		swipeAmount.set(share * width)
+	}, [share, swipeAmount, itemRef, setIsFull])
+}
 
 function useLabelWidth(label: ReactNode) {
 	let measureRef = useRef<HTMLSpanElement>(null)

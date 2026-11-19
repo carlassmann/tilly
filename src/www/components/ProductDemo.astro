@@ -1,0 +1,102 @@
+---
+import { Hero } from "#www/components/Hero"
+import { TillyInAction, type DemoSceneText } from "#www/demo/tilly-in-action"
+import { DemoEnd, type DemoEndText } from "#www/demo/demo-end"
+import type { ComponentProps } from "react"
+
+interface Props {
+	locale: "en" | "de"
+	hero: ComponentProps<typeof Hero>
+	title: string
+	scenes: DemoSceneText[]
+	end: DemoEndText
+}
+
+let { locale, hero, title, scenes, end } = Astro.props
+let story = scenes.filter(scene => scene.id !== "intro")
+---
+
+<!-- The phone stays beside the hero and the story below it. Scrolling through
+     the story's scenes plays them on the phone; their heights set how long
+     each scene lasts. -->
+<section
+	class="container mx-auto grid grid-cols-[minmax(0,1fr)] px-6 md:px-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-x-16"
+>
+	<div
+		data-demo-scene="intro"
+		class="flex flex-col justify-center pt-12 pb-16 lg:min-h-[calc(100svh-4rem)] lg:pb-3"
+	>
+		<Hero {...hero} />
+	</div>
+
+	<div
+		class="bg-background isolate sticky top-16 z-10 flex h-[calc(100svh-4rem)] flex-col items-center justify-center py-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start lg:py-8"
+	>
+		<!-- A soft wash of the brand color sets the phone apart from the page. -->
+		<div
+			aria-hidden="true"
+			class="pointer-events-none absolute inset-x-0 top-1/2 -z-10 mx-auto aspect-square w-[min(36rem,90%)] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--primary)_35%,transparent),transparent)]"
+		>
+		</div>
+		<TillyInAction
+			locale={locale}
+			scenes={scenes}
+			end={end}
+			client:load
+		/>
+	</div>
+	<!-- Fits the phone into its stage as soon as it is on the page, so it shows
+	     at its size before the page's scripts load. -->
+	<script is:inline>
+		for (let slot of document.querySelectorAll("[data-phone-slot]")) {
+			let fit = () =>
+				slot.style.setProperty(
+					"--phone-scale",
+					String(
+						Math.min(
+							slot.clientWidth / Number(slot.dataset.width),
+							slot.clientHeight / Number(slot.dataset.height),
+						),
+					),
+				)
+			fit()
+			new ResizeObserver(fit).observe(slot)
+		}
+	</script>
+
+	<div class="lg:col-start-1">
+		<h2 class="sr-only">{title}</h2>
+		<ol class="flex flex-col">
+			{
+				story.map((scene, index) => (
+					<li
+						id={index === 0 ? "tour" : undefined}
+						data-demo-scene={scene.id}
+						class="group scroll-mt-[20svh] mb-[50svh] flex h-[30svh] flex-col justify-center lg:mb-[20svh] lg:h-[60svh]"
+					>
+						<div class="max-lg:sr-only flex flex-col gap-4 border-l-2 border-border pl-6 opacity-35 transition duration-500 group-data-active:border-primary group-data-active:opacity-100 motion-reduce:transition-none">
+							<span class="text-primary text-sm font-semibold tabular-nums">
+								{String(index + 1).padStart(2, "0")}
+							</span>
+							<h3 class="text-[clamp(1.75rem,2.6vw,2.5rem)] leading-tight font-semibold tracking-tight text-balance">
+								{scene.title}
+							</h3>
+							<p class="text-muted-foreground max-w-[40ch] text-xl leading-relaxed text-pretty">
+								{scene.body}
+							</p>
+						</div>
+					</li>
+				))
+			}
+		</ol>
+		<!-- Once the story is told, the phone is the visitor's to use. Phones
+		     show this below the phone instead. -->
+		<div
+			data-demo-end
+			class="flex h-[40svh] flex-col justify-center lg:h-[calc(100svh-4rem)]"
+		>
+			<div class="max-lg:hidden">
+				<DemoEnd text={end} />
+			</div>
+		</div>
+</section>

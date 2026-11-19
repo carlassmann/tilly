@@ -10,18 +10,21 @@ interface Props {
 
 function Testimonials({ title, subtitle, testimonials }: Props) {
 	return (
-		<div className="container mx-auto px-6 md:px-8">
-			<div className="mx-auto max-w-2xl text-center">
+		<div className="container mx-auto max-w-5xl px-6 md:px-8">
+			<div className="max-w-2xl">
 				<TypographyH2>{title}</TypographyH2>
 				{subtitle && (
-					<TypographyLead className="mt-6">{subtitle}</TypographyLead>
+					<TypographyLead className="mt-4">{subtitle}</TypographyLead>
 				)}
 			</div>
-			<div className="mx-auto mt-16 max-w-5xl">
-				<div className="grid gap-12 md:grid-cols-2 md:gap-16">
+			<div className="mt-12 md:mt-16">
+				<div className="gap-4 md:columns-2">
 					{testimonials.map((testimonial, index) => (
-						<figure key={index} className="border-primary border-l pl-8">
-							<blockquote className="text-foreground text-lg font-medium tracking-tight">
+						<figure
+							key={index}
+							className="bg-muted/50 mb-4 break-inside-avoid rounded-3xl p-8"
+						>
+							<blockquote className="text-foreground text-xl/8 font-medium tracking-tight text-pretty">
 								<p>&ldquo;{testimonial.quote}&rdquo;</p>
 							</blockquote>
 							{testimonial.author && (

@@ -34,8 +34,8 @@ let iconMap = {
 
 function FeatureGridCentered({ badge, title, description, features }: Props) {
 	return (
-		<div className="container mx-auto px-6 md:px-8">
-			<div className="mx-auto max-w-2xl text-center">
+		<div className="container mx-auto max-w-5xl px-6 md:px-8">
+			<div className="max-w-2xl">
 				{badge && (
 					<Badge variant="outline" className="mb-4">
 						{badge}
@@ -43,21 +43,24 @@ function FeatureGridCentered({ badge, title, description, features }: Props) {
 				)}
 				<TypographyH2>{title}</TypographyH2>
 				{description && (
-					<TypographyLead className="mt-6">{description}</TypographyLead>
+					<TypographyLead className="mt-4">{description}</TypographyLead>
 				)}
 			</div>
 
-			<div className="mx-auto mt-16 max-w-2xl md:mt-20 md:max-w-5xl">
-				<dl className="grid max-w-xl grid-cols-1 gap-x-12 gap-y-12 md:max-w-none md:grid-cols-3 md:gap-y-16">
+			<div className="mt-12 md:mt-16">
+				<dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
 					{features.map(feature => {
 						let iconData = iconMap[feature.icon as keyof typeof iconMap]
 						return (
-							<div key={feature.name}>
+							<div
+								key={feature.name}
+								className="border-border bg-card rounded-3xl border p-6"
+							>
 								<dt className="text-foreground text-base font-semibold">
-									<div className="bg-primary mb-4 flex size-12 items-center justify-center rounded-xl">
+									<div className="bg-primary/10 mb-5 flex size-11 items-center justify-center rounded-2xl">
 										<HugeiconsIcon
 											icon={iconData.icon}
-											className="text-primary-foreground size-7"
+											className="text-primary size-6"
 										/>
 									</div>
 									{feature.name}

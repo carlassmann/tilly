@@ -1,11 +1,9 @@
 ---
 import MinimalMarketingLayout from "#www/layouts/MinimalMarketingLayout.astro"
 import { Navbar } from "#www/components/Navbar"
-import { Hero } from "#www/components/Hero"
-import { SyntwinCTA } from "#www/components/SyntwinCTA"
+import ProductDemo from "#www/components/ProductDemo.astro"
 import { ContentWithTestimonial } from "#www/components/ContentWithTestimonial"
 import { FeatureGridOffset } from "#www/components/FeatureGridOffset"
-import { FeaturesWithProductScreenshot } from "#www/components/FeaturesWithProductScreenshot"
 import { Testimonials } from "#www/components/Testimonials"
 import { FeatureGridCentered } from "#www/components/FeatureGridCentered"
 import { Pricing } from "#www/components/Pricing"
@@ -41,39 +39,65 @@ import { Footer } from "#www/components/Footer"
 		]}
 	/>
 
-	<div class="pt-3 pb-12 md:pb-24">
-		<Hero
-			client:load
-			badge={{
+	<ProductDemo
+		locale="en"
+		hero={{
+			badge: {
 				text: "Tilly is Open Source",
 				href: "https://github.com/carlassmann/tilly",
 				description: "Check out the Repo",
-			}}
-			title="Never forget to follow up again"
-			description="Your friends tell you important things. Tilly helps you remember and follow up when it matters."
-			primaryCta={{
+			},
+			title: "Never forget to follow up again",
+			description: "Your friends tell you important things. Tilly helps you remember and follow up when it matters.",
+			primaryCta: {
 				text: "Start remembering",
 				href: "/app",
-			}}
-			secondaryCta={{
+			},
+			secondaryCta: {
 				text: "Learn more",
-				href: "#features",
-			}}
-			media={{
-				kind: "image",
-				src: "/images/screenshots/en-people.webp",
-				alt: "Phone showing the Tilly People list",
-				loading: "eager",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
-		/>
-	</div>
-	<SyntwinCTA
-		title="Talk to my Syntwin about Tilly"
-		description="My Syntwin answers questions and shows you around, in my words."
-		creator="Carl, creator of Tilly"
-		action="Start talking"
+				href: "#tour",
+			},
+		}}
+		title="See Tilly in action"
+		end={{
+			title: "Your turn",
+			body: "The phone is the real app. Click through it as long as you like, or start Tilly with your own friends.",
+			touchBody: "Tap the phone to try the real app, or start with your own friends.",
+			app: { text: "Start remembering", href: "/app" },
+			syntwin: "Ask my Syntwin about Tilly",
+		}}
+		scenes={[
+			{
+				id: "intro",
+				title: "Never forget to follow up again",
+				body: "Your friends tell you important things. Tilly helps you remember and follow up when it matters.",
+			},
+			{
+				id: "log",
+				title: "Write down what friends tell you",
+				body: "Sarah mentions her job interview over coffee. Note it in a few words, right on her page.",
+			},
+			{
+				id: "remind",
+				title: "Get reminded to follow up",
+				body: "Add a reminder and Tilly nudges you on the day, so you remember to ask how it went.",
+			},
+			{
+				id: "talk",
+				title: "Or just tell Tilly",
+				body: "After dinner, say what you heard. Tilly Agent finds the right people, adds the notes and suggests reminders.",
+			},
+			{
+				id: "catchup",
+				title: "Catch up before you meet",
+				body: "Ask about a friend and get what matters, plus a few things to ask.",
+			},
+			{
+				id: "today",
+				title: "Be the friend who remembers",
+				body: "Every day, see who to check in with.",
+			},
+		]}
 	/>
 	<div id="story" class="py-24">
 		<ContentWithTestimonial
@@ -123,34 +147,6 @@ import { Footer } from "#www/components/Footer"
 		/>
 	</div>
 
-	<div class="py-12 md:py-24">
-		<FeaturesWithProductScreenshot
-			badge="How it works"
-			title="Simple. Practical. Actually works."
-			features={[
-				{
-					name: "Log what friends tell you",
-					description:
-						"Store notes for each person. See what matters most, not just their phone number.",
-				},
-				{
-					name: "Get reminded to follow up",
-					description: "Set reminders so you never miss important moments.",
-				},
-				{
-					name: "Build stronger friendships",
-					description: "Show up when it matters. Be the friend who remembers.",
-				},
-			]}
-			media={{
-				kind: "image",
-				src: "/images/screenshots/en-person.webp",
-				alt: "Phone showing Tilly person notes",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
-		/>
-	</div>
 	<div class="py-24" id="features">
 		<FeatureGridCentered
 			title="Simple by design"
@@ -216,41 +212,6 @@ import { Footer } from "#www/components/Footer"
 				},
 				{ quote: "This is a cheat code for being a better friend!" },
 			]}
-		/>
-	</div>
-	<div class="py-12 md:py-24">
-		<FeaturesWithProductScreenshot
-			client:load
-			badge="Tilly Agent: Your Relationship Assistant"
-			title="Tilly Agent reads and writes your journal."
-			features={[
-				{
-					name: "Just talk:",
-					description:
-						"'Sarah has a new project, Sophie has a new client, she seemed more relaxed.'",
-				},
-				{
-					name: "Tilly organizes:",
-					description:
-						"Finds Sarah and Sophie, adds notes, suggests reminders.",
-				},
-				{
-					name: "Before meeting:",
-					description: "'Catch me up on Sarah' - Then you know what to ask.",
-				},
-				{
-					name: "When reaching out:",
-					description: "'Help me message Sophie' - Get suggestions.",
-				},
-			]}
-			closing="The convenience is real. It's so easy that you actually use it."
-			media={{
-				kind: "image",
-				src: "/images/screenshots/en-chat.webp",
-				alt: "Phone showing the Tilly Agent chat",
-				aspectRatio: "215 / 466",
-				fit: "contain",
-			}}
 		/>
 	</div>
 	<div id="experience" class="py-24">

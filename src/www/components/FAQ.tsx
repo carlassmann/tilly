@@ -19,12 +19,12 @@ interface Props {
 
 function FAQ({ title, description, faqs }: Props) {
 	return (
-		<div className="container mx-auto px-6 md:px-8">
-			<div className="mx-auto max-w-4xl text-center">
+		<div className="container mx-auto grid max-w-5xl gap-10 px-6 md:grid-cols-[1fr_1.6fr] md:gap-16 md:px-8">
+			<div>
 				<TypographyH2>{title}</TypographyH2>
 				{description && <TypographyP>{description}</TypographyP>}
 			</div>
-			<div className="mx-auto mt-10 max-w-2xl md:mt-16">
+			<div>
 				<Accordion className="w-full">
 					{faqs.map((faq, index) => (
 						<AccordionItem key={index} value={`item-${index}`}>

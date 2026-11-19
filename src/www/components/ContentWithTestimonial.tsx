@@ -27,7 +27,7 @@ function ContentWithTestimonial({
 	children,
 }: Props) {
 	return (
-		<div className="container mx-auto px-6 md:px-8">
+		<div className="container mx-auto max-w-5xl px-6 md:px-8">
 			<div className="mx-auto max-w-2xl md:mx-0">
 				{badge && <Badge variant="outline">{badge}</Badge>}
 				<TypographyH2>{title}</TypographyH2>
@@ -36,12 +36,12 @@ function ContentWithTestimonial({
 				)}
 			</div>
 			<div className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 md:mx-0 md:mt-10 md:max-w-none md:grid-cols-12">
-				<div className="prose prose-gray dark:prose-invert max-w-xl md:col-span-7">
+				<div className="prose prose-lg prose-gray dark:prose-invert max-w-xl md:col-span-7">
 					{children}
 				</div>
 				<div className="relative md:order-last md:col-span-5">
-					<figure className="border-primary border-l pl-8">
-						<blockquote className="text-foreground text-xl/8 font-semibold tracking-tight">
+					<figure className="bg-muted/50 rounded-3xl p-8">
+						<blockquote className="text-foreground text-2xl/9 font-semibold tracking-tight">
 							<p>&ldquo;{testimonial.quote}&rdquo;</p>
 						</blockquote>
 						<figcaption className="mt-8 flex gap-x-4">

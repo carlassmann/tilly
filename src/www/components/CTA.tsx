@@ -18,15 +18,17 @@ interface Props {
 
 function CTA({ title, primaryCta, secondaryCta }: Props) {
 	return (
-		<div className="bg-background">
-			<div className="container mx-auto px-6 py-24 md:flex md:items-center md:justify-around">
-				<TypographyH2>{title}</TypographyH2>
-				<div className="mt-10 flex items-center gap-x-6 md:mt-0 md:shrink-0">
+		<div className="container mx-auto max-w-5xl px-6 pb-24 md:px-8">
+			<div className="bg-primary text-primary-foreground flex flex-col items-start gap-8 rounded-[2rem] px-8 py-12 md:flex-row md:items-center md:justify-between md:px-12 md:py-16">
+				<TypographyH2 className="text-primary-foreground max-w-[18ch] text-4xl text-balance">
+					{title}
+				</TypographyH2>
+				<div className="flex items-center gap-x-6 md:shrink-0">
 					<a
 						href={primaryCta.href}
 						className={cn(
-							buttonVariants({ variant: "default" }),
-							"px-3.5 py-2.5",
+							buttonVariants({ variant: "secondary" }),
+							"h-12 px-6 text-base pointer-fine:h-12",
 						)}
 					>
 						{primaryCta.text}
@@ -34,7 +36,7 @@ function CTA({ title, primaryCta, secondaryCta }: Props) {
 					{secondaryCta && (
 						<a
 							href={secondaryCta.href}
-							className="text-foreground text-sm/6 font-semibold pointer-fine:hover:opacity-80"
+							className="text-sm/6 font-semibold pointer-fine:hover:opacity-80"
 						>
 							{secondaryCta.text}
 							<span aria-hidden="true">→</span>
