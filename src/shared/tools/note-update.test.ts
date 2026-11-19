@@ -1,9 +1,24 @@
 import { beforeEach, describe, expect, test } from "vitest"
 import { setActiveAccount } from "jazz-tools/testing"
 import type { co } from "jazz-tools"
-import { Note, UserAccount } from "#shared/schema/user"
+import { Note, Person, UserAccount } from "#shared/schema/user"
 import { updateNote } from "#shared/tools/note-update"
-import { createAccount, seedNote, seedPerson } from "#shared/tools/test-helpers"
+import {
+	redactNoise,
+	createAccount,
+	seedNote,
+	seedPerson,
+} from "#shared/tools/test-helpers"
+
+async function contentsByList(person: co.loaded<typeof Person>) {
+	let loaded = await person.$jazz.ensureLoaded({
+		resolve: { notes: { $each: true }, inactiveNotes: { $each: true } },
+	})
+	return {
+		active: loaded.notes.map(n => n.content),
+		inactive: loaded.inactiveNotes?.map(n => n.content),
+	}
+}
 
 describe("updateNote", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -11,6 +26,14 @@ describe("updateNote", () => {
 	beforeEach(async () => {
 		owner = await createAccount({ isCurrentActive: true })
 	})
+
+	async function setNoteDeletedAt(
+		person: co.loaded<typeof Person>,
+		noteId: string,
+		deletedAt: Date | undefined,
+	) {
+		await updateNote(owner, { personId: person.$jazz.id, noteId, deletedAt })
+	}
 
 	test("edits content and returns previous + current", async () => {
 		let person = await seedPerson(owner, { name: "Ada" })
@@ -21,12 +44,28 @@ describe("updateNote", () => {
 			noteId: note.$jazz.id,
 			content: "after",
 		})
-
-		expect(result.previous.content).toBe("before")
-		expect(result.current.content).toBe("after")
-
-		let reloaded = await Note.load(note.$jazz.id)
-		expect(reloaded?.$isLoaded ? reloaded.content : null).toBe("after")
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "content": "after",
+			    "createdAt": "<time>",
+			    "noteId": "<id>",
+			    "personId": "<id>",
+			    "pinned": false,
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "update",
+			  "previous": {
+			    "content": "before",
+			    "createdAt": "<time>",
+			    "noteId": "<id>",
+			    "personId": "<id>",
+			    "pinned": false,
+			    "updatedAt": "<time>",
+			  },
+			}
+		`)
+		expect(await Note.load(note.$jazz.id)).toMatchObject({ content: "after" })
 	})
 
 	test("toggle pin", async () => {
@@ -46,43 +85,23 @@ describe("updateNote", () => {
 		let person = await seedPerson(owner, { name: "Ada" })
 		let note = await seedNote(person, { content: "delete me" })
 
-		await updateNote(owner, {
-			personId: person.$jazz.id,
-			noteId: note.$jazz.id,
-			deletedAt: new Date(),
+		await setNoteDeletedAt(person, note.$jazz.id, new Date())
+		expect(await contentsByList(person)).toEqual({
+			active: [],
+			inactive: ["delete me"],
 		})
-
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: { notes: { $each: true }, inactiveNotes: { $each: true } },
-		})
-		expect(loaded.notes.some(n => n?.$jazz.id === note.$jazz.id)).toBe(false)
-		expect(loaded.inactiveNotes?.some(n => n?.$jazz.id === note.$jazz.id)).toBe(
-			true,
-		)
 	})
 
 	test("restore moves note back from inactiveNotes", async () => {
 		let person = await seedPerson(owner, { name: "Ada" })
 		let note = await seedNote(person, { content: "restore me" })
-		await updateNote(owner, {
-			personId: person.$jazz.id,
-			noteId: note.$jazz.id,
-			deletedAt: new Date(),
-		})
+		await setNoteDeletedAt(person, note.$jazz.id, new Date())
 
-		await updateNote(owner, {
-			personId: person.$jazz.id,
-			noteId: note.$jazz.id,
-			deletedAt: undefined,
+		await setNoteDeletedAt(person, note.$jazz.id, undefined)
+		expect(await contentsByList(person)).toEqual({
+			active: ["restore me"],
+			inactive: [],
 		})
-
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: { notes: { $each: true }, inactiveNotes: { $each: true } },
-		})
-		expect(loaded.notes.some(n => n?.$jazz.id === note.$jazz.id)).toBe(true)
-		expect(loaded.inactiveNotes?.some(n => n?.$jazz.id === note.$jazz.id)).toBe(
-			false,
-		)
 	})
 
 	test("throws when note not found", async () => {
@@ -115,10 +134,9 @@ describe("updateNote", () => {
 			await collaborator.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)
-			let reloaded = await Note.load(note.$jazz.id)
-			expect(reloaded?.$isLoaded ? reloaded.content : null).toBe(
-				"edited remotely",
-			)
+			expect(await Note.load(note.$jazz.id)).toMatchObject({
+				content: "edited remotely",
+			})
 		})
 	})
 })

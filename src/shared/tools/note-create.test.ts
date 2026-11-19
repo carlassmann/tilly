@@ -1,9 +1,20 @@
 import { beforeEach, describe, expect, test } from "vitest"
 import { setActiveAccount } from "jazz-tools/testing"
 import type { co } from "jazz-tools"
-import { Note, UserAccount } from "#shared/schema/user"
+import { Note, Person, UserAccount } from "#shared/schema/user"
 import { createNote } from "#shared/tools/note-create"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	redactNoise,
+	createAccount,
+	seedPerson,
+} from "#shared/tools/test-helpers"
+
+async function storedNotes(person: co.loaded<typeof Person>) {
+	let loaded = await person.$jazz.ensureLoaded({
+		resolve: { notes: { $each: true } },
+	})
+	return loaded.notes
+}
 
 describe("createNote", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -19,18 +30,24 @@ describe("createNote", () => {
 			personId: person.$jazz.id,
 			content: "first note",
 		})
-
-		expect(result.operation).toBe("create")
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "content": "first note",
+			    "createdAt": "<time>",
+			    "noteId": "<id>",
+			    "personId": "<id>",
+			    "pinned": false,
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "create",
+			}
+		`)
 		expect(result.current.personId).toBe(person.$jazz.id)
-		expect(result.current.content).toBe("first note")
-		expect(result.current.pinned).toBe(false)
 
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: { notes: { $each: true } },
-		})
-		expect(loaded.notes.length).toBe(1)
-		expect(loaded.notes[0]?.content).toBe("first note")
-		expect(loaded.notes[0]?.$jazz.id).toBe(result.current.noteId)
+		let stored = await storedNotes(person)
+		expect(stored.map(n => n.$jazz.id)).toEqual([result.current.noteId])
+		expect(stored[0]?.content).toBe("first note")
 	})
 
 	test("content survives a reload via Note.load", async () => {
@@ -43,12 +60,11 @@ describe("createNote", () => {
 			title: "T",
 		})
 
-		let reloaded = await Note.load(result.current.noteId)
-		expect(reloaded?.$isLoaded).toBe(true)
-		if (!reloaded?.$isLoaded) return
-		expect(reloaded.content).toBe("persisted")
-		expect(reloaded.pinned).toBe(true)
-		expect(reloaded.title).toBe("T")
+		expect(await Note.load(result.current.noteId)).toMatchObject({
+			content: "persisted",
+			pinned: true,
+			title: "T",
+		})
 	})
 
 	test("bumps the person's updatedAt", async () => {
@@ -88,23 +104,15 @@ describe("createNote", () => {
 			await owner.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(collaborator)
-
-			let result = await createNote(collaborator, {
+			await createNote(collaborator, {
 				personId: person.$jazz.id,
 				content: "from collaborator",
 			})
-
-			expect(result.current.content).toBe("from collaborator")
-
 			await collaborator.$jazz.waitForAllCoValuesSync()
-			setActiveAccount(owner)
 
-			let loaded = await person.$jazz.ensureLoaded({
-				resolve: { notes: { $each: true } },
-			})
-			expect(loaded.notes.some(n => n?.content === "from collaborator")).toBe(
-				true,
-			)
+			setActiveAccount(owner)
+			let stored = await storedNotes(person)
+			expect(stored.map(n => n.content)).toEqual(["from collaborator"])
 		})
 
 		test("a non-member cannot load the person, createNote rejects", async () => {

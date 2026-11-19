@@ -1,62 +1,62 @@
-import { describe, test, expect } from "vitest"
+import { expect, test } from "vitest"
 import { countDueReminders, interpolateCount } from "./sw-utils"
 
-describe("countDueReminders", () => {
-	test("returns 0 for empty reminders", () => {
-		expect(countDueReminders([], "2025-01-15")).toBe(0)
+test("countDueReminders", () => {
+	let cases: { name: string; dates: string[]; today: string }[] = [
+		{ name: "empty reminders", dates: [], today: "2025-01-15" },
+		{
+			name: "due today",
+			dates: ["2025-01-15", "2025-01-16"],
+			today: "2025-01-15",
+		},
+		{
+			name: "due in the past",
+			dates: ["2025-01-10", "2025-01-14", "2025-01-15"],
+			today: "2025-01-15",
+		},
+		{
+			name: "future reminders",
+			dates: ["2025-01-16", "2025-02-01"],
+			today: "2025-01-15",
+		},
+		{
+			name: "year boundary",
+			dates: ["2024-12-31", "2025-01-01", "2025-01-02"],
+			today: "2025-01-01",
+		},
+	]
+	let table = cases.map(({ name, dates, today }) => {
+		let reminders = dates.map(dueAtDate => ({ dueAtDate }))
+		return `${name} | due ${dates.join(", ") || "none"} | today ${today} -> ${countDueReminders(reminders, today)}`
 	})
-
-	test("counts reminders due today", () => {
-		let reminders = [{ dueAtDate: "2025-01-15" }, { dueAtDate: "2025-01-16" }]
-		expect(countDueReminders(reminders, "2025-01-15")).toBe(1)
-	})
-
-	test("counts reminders due in the past", () => {
-		let reminders = [
-			{ dueAtDate: "2025-01-10" },
-			{ dueAtDate: "2025-01-14" },
-			{ dueAtDate: "2025-01-15" },
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "empty reminders | due none | today 2025-01-15 -> 0",
+		  "due today | due 2025-01-15, 2025-01-16 | today 2025-01-15 -> 1",
+		  "due in the past | due 2025-01-10, 2025-01-14, 2025-01-15 | today 2025-01-15 -> 3",
+		  "future reminders | due 2025-01-16, 2025-02-01 | today 2025-01-15 -> 0",
+		  "year boundary | due 2024-12-31, 2025-01-01, 2025-01-02 | today 2025-01-01 -> 2",
 		]
-		expect(countDueReminders(reminders, "2025-01-15")).toBe(3)
-	})
-
-	test("excludes future reminders", () => {
-		let reminders = [{ dueAtDate: "2025-01-16" }, { dueAtDate: "2025-02-01" }]
-		expect(countDueReminders(reminders, "2025-01-15")).toBe(0)
-	})
-
-	test("handles year boundary", () => {
-		let reminders = [
-			{ dueAtDate: "2024-12-31" },
-			{ dueAtDate: "2025-01-01" },
-			{ dueAtDate: "2025-01-02" },
-		]
-		expect(countDueReminders(reminders, "2025-01-01")).toBe(2)
-	})
+	`)
 })
 
-describe("interpolateCount", () => {
-	test("replaces {count} with number", () => {
-		expect(interpolateCount("You have {count} reminders", 5)).toBe(
-			"You have 5 reminders",
-		)
-	})
-
-	test("handles count of 1", () => {
-		expect(interpolateCount("You have {count} reminders", 1)).toBe(
-			"You have 1 reminders",
-		)
-	})
-
-	test("handles count of 0", () => {
-		expect(interpolateCount("You have {count} reminders", 0)).toBe(
-			"You have 0 reminders",
-		)
-	})
-
-	test("returns unchanged string if no placeholder", () => {
-		expect(interpolateCount("No placeholder here", 5)).toBe(
-			"No placeholder here",
-		)
-	})
+test("interpolateCount", () => {
+	let cases: [string, number][] = [
+		["You have {count} reminders", 5],
+		["You have {count} reminders", 1],
+		["You have {count} reminders", 0],
+		["No placeholder here", 5],
+	]
+	let table = cases.map(
+		([template, count]) =>
+			`${template} | count ${count} -> ${interpolateCount(template, count)}`,
+	)
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "You have {count} reminders | count 5 -> You have 5 reminders",
+		  "You have {count} reminders | count 1 -> You have 1 reminders",
+		  "You have {count} reminders | count 0 -> You have 0 reminders",
+		  "No placeholder here | count 5 -> No placeholder here",
+		]
+	`)
 })

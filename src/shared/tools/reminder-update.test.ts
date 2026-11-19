@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from "vitest"
 import type { co } from "jazz-tools"
-import { Reminder, UserAccount } from "#shared/schema/user"
+import { Person, Reminder, UserAccount } from "#shared/schema/user"
 import { updateReminder } from "#shared/tools/reminder-update"
 import {
+	redactNoise,
 	createAccount,
 	seedPerson,
 	seedReminder,
@@ -28,11 +29,29 @@ describe("updateReminder", () => {
 			text: "new",
 			dueAtDate: "2099-02-01",
 		})
-
-		expect(result.previous.text).toBe("old")
-		expect(result.previous.dueAtDate).toBe("2099-01-01")
-		expect(result.current.text).toBe("new")
-		expect(result.current.dueAtDate).toBe("2099-02-01")
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "createdAt": "<time>",
+			    "done": false,
+			    "dueAtDate": "2099-02-01",
+			    "personId": "<id>",
+			    "reminderId": "<id>",
+			    "text": "new",
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "update",
+			  "previous": {
+			    "createdAt": "<time>",
+			    "done": false,
+			    "dueAtDate": "2099-01-01",
+			    "personId": "<id>",
+			    "reminderId": "<id>",
+			    "text": "old",
+			    "updatedAt": "<time>",
+			  },
+			}
+		`)
 	})
 
 	test("mark done (non-repeating) moves to inactiveReminders", async () => {
@@ -47,19 +66,14 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			done: true,
 		})
-
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: {
-				reminders: { $each: true },
-				inactiveReminders: { $each: true },
-			},
-		})
-		expect(loaded.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			false,
-		)
-		expect(
-			loaded.inactiveReminders?.some(r => r?.$jazz.id === reminder.$jazz.id),
-		).toBe(true)
+		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
+			{
+			  "active": [],
+			  "inactive": [
+			    "do it · 2099-01-01 · done",
+			  ],
+			}
+		`)
 	})
 
 	test("mark done (repeating) reschedules to next occurrence and stays active", async () => {
@@ -70,21 +84,19 @@ describe("updateReminder", () => {
 			repeat: { interval: 1, unit: "week" },
 		})
 
-		let result = await updateReminder(owner, {
+		await updateReminder(owner, {
 			personId: person.$jazz.id,
 			reminderId: reminder.$jazz.id,
 			done: true,
 		})
-
-		expect(result.current.done).toBe(false)
-		expect(result.current.dueAtDate).toBe("2099-01-08")
-
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: { reminders: { $each: true } },
-		})
-		expect(loaded.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			true,
-		)
+		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
+			{
+			  "active": [
+			    "weekly call · 2099-01-08",
+			  ],
+			  "inactive": [],
+			}
+		`)
 	})
 
 	test("undone restores from inactive to active", async () => {
@@ -104,16 +116,14 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			done: false,
 		})
-
-		let loaded = await person.$jazz.ensureLoaded({
-			resolve: {
-				reminders: { $each: true },
-				inactiveReminders: { $each: true },
-			},
-		})
-		expect(loaded.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			true,
-		)
+		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
+			{
+			  "active": [
+			    "x · 2099-01-01",
+			  ],
+			  "inactive": [],
+			}
+		`)
 	})
 
 	test("soft delete moves to inactive, restore moves back", async () => {
@@ -128,34 +138,31 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			deletedAt: new Date(),
 		})
-
-		let afterDelete = await person.$jazz.ensureLoaded({
-			resolve: {
-				reminders: { $each: true },
-				inactiveReminders: { $each: true },
-			},
-		})
-		expect(
-			afterDelete.inactiveReminders?.some(
-				r => r?.$jazz.id === reminder.$jazz.id,
-			),
-		).toBe(true)
+		let afterDelete = await reminderListsOf(person)
 
 		await updateReminder(owner, {
 			personId: person.$jazz.id,
 			reminderId: reminder.$jazz.id,
 			deletedAt: undefined,
 		})
+		let afterRestore = await reminderListsOf(person)
 
-		let afterRestore = await person.$jazz.ensureLoaded({
-			resolve: {
-				reminders: { $each: true },
-				inactiveReminders: { $each: true },
-			},
-		})
-		expect(
-			afterRestore.reminders.some(r => r?.$jazz.id === reminder.$jazz.id),
-		).toBe(true)
+		expect({ afterDelete, afterRestore }).toMatchInlineSnapshot(`
+			{
+			  "afterDelete": {
+			    "active": [],
+			    "inactive": [
+			      "x · 2099-01-01 · deleted",
+			    ],
+			  },
+			  "afterRestore": {
+			    "active": [
+			      "x · 2099-01-01",
+			    ],
+			    "inactive": [],
+			  },
+			}
+		`)
 	})
 
 	test("throws when reminder not found", async () => {
@@ -182,10 +189,24 @@ describe("updateReminder", () => {
 			reminderId: reminder.$jazz.id,
 			done: true,
 		})
-
 		expect(result.current.dueAtDate).toBe("2099-02-15")
 
 		let reloaded = await Reminder.load(reminder.$jazz.id)
 		expect(reloaded?.$isLoaded ? reloaded.dueAtDate : null).toBe("2099-02-15")
 	})
 })
+
+async function reminderListsOf(person: co.loaded<typeof Person>) {
+	let loaded = await person.$jazz.ensureLoaded({
+		resolve: {
+			reminders: { $each: true },
+			inactiveReminders: { $each: true },
+		},
+	})
+	let describeReminder = (r: co.loaded<typeof Reminder>) =>
+		`${r.text} · ${r.dueAtDate}${r.done ? " · done" : ""}${r.deletedAt ? " · deleted" : ""}`
+	return {
+		active: loaded.reminders.map(describeReminder),
+		inactive: (loaded.inactiveReminders ?? []).map(describeReminder),
+	}
+}

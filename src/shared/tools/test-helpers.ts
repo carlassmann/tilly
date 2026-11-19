@@ -2,7 +2,7 @@ import { Group, co } from "jazz-tools"
 import { createJazzTestAccount } from "jazz-tools/testing"
 import { Note, Person, Reminder, UserAccount } from "#shared/schema/user"
 
-export { createAccount, seedPerson, seedNote, seedReminder }
+export { createAccount, seedPerson, seedNote, seedReminder, redactNoise }
 
 async function createAccount(opts: { isCurrentActive?: boolean } = {}) {
 	return await createJazzTestAccount({
@@ -47,7 +47,13 @@ async function seedPerson(
 
 async function seedNote(
 	person: co.loaded<typeof Person>,
-	args: { content: string; pinned?: boolean; title?: string; deletedAt?: Date },
+	args: {
+		content: string
+		pinned?: boolean
+		title?: string
+		deletedAt?: Date
+		createdAt?: Date
+	},
 ) {
 	let loaded = await person.$jazz.ensureLoaded({ resolve: { notes: true } })
 	let now = new Date()
@@ -58,7 +64,7 @@ async function seedNote(
 			content: args.content,
 			pinned: args.pinned ?? false,
 			deletedAt: args.deletedAt,
-			createdAt: now,
+			createdAt: args.createdAt ?? now,
 			updatedAt: now,
 		},
 		loaded.$jazz.owner,
@@ -96,4 +102,13 @@ async function seedReminder(
 	)
 	loaded.reminders.$jazz.push(reminder)
 	return reminder
+}
+
+// Expect tests snapshot whole outputs; ids and timestamps differ every run.
+function redactNoise(value: unknown) {
+	return JSON.parse(
+		JSON.stringify(value)
+			.replace(/co_z\w+/g, "<id>")
+			.replace(/\d{4}-\d\d-\d\dT[\d:.]+Z/g, "<time>"),
+	)
 }

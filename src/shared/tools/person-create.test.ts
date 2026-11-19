@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "vitest"
 import type { co } from "jazz-tools"
 import { Person, UserAccount } from "#shared/schema/user"
 import { createPerson } from "#shared/tools/person-create"
-import { createAccount } from "#shared/tools/test-helpers"
+import { redactNoise, createAccount } from "#shared/tools/test-helpers"
 
 describe("createPerson", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -16,16 +16,23 @@ describe("createPerson", () => {
 			name: "Ada Lovelace",
 			summary: "mathematician",
 		})
-
-		expect(result.operation).toBe("create")
-		expect(result.current.name).toBe("Ada Lovelace")
-		expect(result.current.summary).toBe("mathematician")
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "createdAt": "<time>",
+			    "name": "Ada Lovelace",
+			    "personId": "<id>",
+			    "summary": "mathematician",
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "create",
+			}
+		`)
 
 		let { root } = await owner.$jazz.ensureLoaded({
 			resolve: { root: { people: { $each: true } } },
 		})
-		expect(root.people.length).toBe(1)
-		expect(root.people[0]?.$jazz.id).toBe(result.current.personId)
+		expect(root.people.map(p => p.$jazz.id)).toEqual([result.current.personId])
 		expect(root.people[0]?.name).toBe("Ada Lovelace")
 	})
 
@@ -33,9 +40,7 @@ describe("createPerson", () => {
 		let result = await createPerson(owner, { name: "Grace" })
 
 		let reloaded = await Person.load(result.current.personId)
-		expect(reloaded?.$isLoaded).toBe(true)
-		if (!reloaded?.$isLoaded) return
-		expect(reloaded.name).toBe("Grace")
+		expect(reloaded?.$isLoaded && reloaded.name).toBe("Grace")
 	})
 
 	test("summary is optional", async () => {

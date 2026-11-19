@@ -3,7 +3,11 @@ import { setActiveAccount } from "jazz-tools/testing"
 import type { co } from "jazz-tools"
 import { Reminder, UserAccount } from "#shared/schema/user"
 import { createReminder } from "#shared/tools/reminder-create"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	redactNoise,
+	createAccount,
+	seedPerson,
+} from "#shared/tools/test-helpers"
 
 describe("createReminder", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -20,11 +24,20 @@ describe("createReminder", () => {
 			text: "call back",
 			dueAtDate: "2099-01-01",
 		})
-
-		expect(result.operation).toBe("create")
-		expect(result.current.text).toBe("call back")
-		expect(result.current.dueAtDate).toBe("2099-01-01")
-		expect(result.current.done).toBe(false)
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "createdAt": "<time>",
+			    "done": false,
+			    "dueAtDate": "2099-01-01",
+			    "personId": "<id>",
+			    "reminderId": "<id>",
+			    "text": "call back",
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "create",
+			}
+		`)
 
 		let loaded = await person.$jazz.ensureLoaded({
 			resolve: { reminders: { $each: true } },
@@ -45,10 +58,8 @@ describe("createReminder", () => {
 		})
 
 		let reloaded = await Reminder.load(result.current.reminderId)
-		expect(reloaded?.$isLoaded).toBe(true)
-		if (!reloaded?.$isLoaded) return
-		expect(reloaded.repeat?.interval).toBe(1)
-		expect(reloaded.repeat?.unit).toBe("week")
+		if (!reloaded?.$isLoaded) throw new Error("reminder not loaded")
+		expect(reloaded.repeat).toMatchObject({ interval: 1, unit: "week" })
 	})
 
 	test("throws when person not found", async () => {

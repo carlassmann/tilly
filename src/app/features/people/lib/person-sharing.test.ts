@@ -44,6 +44,30 @@ describe("Person sharing", () => {
 		owner = await createAccount({ isCurrentActive: true })
 	})
 
+	async function createInvite(person: co.loaded<typeof Person>) {
+		let full = await loadFullPerson(person)
+		return parseInviteLink(
+			await createPersonInviteLink(full, owner.$jazz.id, BASE_URL),
+		)
+	}
+
+	async function signUpInvitee() {
+		await owner.$jazz.waitForAllCoValuesSync()
+		let invitee = await createAccount()
+		setActiveAccount(invitee)
+		let loadedInvitee = await invitee.$jazz.ensureLoaded({
+			resolve: { root: { people: true } },
+		})
+		return { invitee, loadedInvitee }
+	}
+
+	async function loadInviteePeople(invitee: co.loaded<typeof UserAccount>) {
+		let { root } = await invitee.$jazz.ensureLoaded({
+			resolve: { root: { people: { $each: true } } },
+		})
+		return root.people
+	}
+
 	describe("createPersonInviteLink", () => {
 		test("emits the canonical invite URL format", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
@@ -59,10 +83,7 @@ describe("Person sharing", () => {
 
 		test("parsed invite resolves to the original personId", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
+			let parsed = await createInvite(person)
 			expect(parsed.personId).toBe(person.$jazz.id)
 		})
 	})
@@ -70,40 +91,20 @@ describe("Person sharing", () => {
 	describe("acceptPersonInvite", () => {
 		test("invitee gains access and the person is pushed to their root.people", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
 			expect(result.status).toBe("accepted")
 
-			let after = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: { $each: true } } },
-			})
-			expect(after.root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(
-				true,
-			)
+			let people = await loadInviteePeople(invitee)
+			expect(people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(true)
 		})
 
 		test("invitee can edit the shared person (writer role grants write access)", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 
 			await updatePerson(invitee, {
@@ -119,16 +120,8 @@ describe("Person sharing", () => {
 
 		test("accepting twice is idempotent (already-member, no duplicate in list)", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 
 			let first = await acceptPersonInvite(loadedInvitee, parsed)
 			let second = await acceptPersonInvite(loadedInvitee, parsed)
@@ -136,29 +129,18 @@ describe("Person sharing", () => {
 			expect(first.status).toBe("accepted")
 			expect(second.status).toBe("already-member")
 
-			let after = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: { $each: true } } },
-			})
-			let matches = after.root.people.filter(
-				p => p?.$jazz.id === person.$jazz.id,
+			let people = await loadInviteePeople(invitee)
+			expect(people.filter(p => p?.$jazz.id === person.$jazz.id)).toHaveLength(
+				1,
 			)
-			expect(matches.length).toBe(1)
 		})
 	})
 
 	describe("revocation", () => {
 		test("revoked invitee loses read access to the person", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 
 			let visibleBefore = await Person.load(person.$jazz.id)
@@ -180,9 +162,7 @@ describe("Person sharing", () => {
 	describe("getInviteGroupsWithMembers / getPendingInviteGroups", () => {
 		test("pending groups show accepted-but-empty invites; members appear after acceptance", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
+			let parsed = await createInvite(person)
 
 			let pendingBefore = getPendingInviteGroups(person)
 			expect(pendingBefore.some(p => p.groupId === parsed.inviteGroupId)).toBe(
@@ -192,12 +172,7 @@ describe("Person sharing", () => {
 			let withMembersBefore = await getInviteGroupsWithMembers(person)
 			expect(withMembersBefore.length).toBe(0)
 
-			await owner.$jazz.waitForAllCoValuesSync()
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 			await invitee.$jazz.waitForAllCoValuesSync()
 
@@ -254,11 +229,7 @@ describe("Person sharing", () => {
 
 		test("inviting an account-owned person migrates it and yields a working link", async () => {
 			let original = await seedAccountOwnedPerson(owner, "Legacy")
-			let full = await loadFullPerson(original)
-
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-
+			let parsed = await createInvite(original)
 			expect(parsed.personId).not.toBe(original.$jazz.id)
 
 			let migrated = await Person.load(parsed.personId)
@@ -267,14 +238,7 @@ describe("Person sharing", () => {
 			expect(migrated.name).toBe("Legacy")
 			expect(isGroupOwned(migrated)).toBe(true)
 
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
-
+			let { loadedInvitee } = await signUpInvitee()
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
 			expect(result.status).toBe("accepted")
 		})

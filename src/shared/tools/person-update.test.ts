@@ -3,7 +3,11 @@ import { setActiveAccount } from "jazz-tools/testing"
 import type { co } from "jazz-tools"
 import { Person, UserAccount } from "#shared/schema/user"
 import { updatePerson } from "#shared/tools/person-update"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	redactNoise,
+	createAccount,
+	seedPerson,
+} from "#shared/tools/test-helpers"
 
 describe("updatePerson", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -11,6 +15,22 @@ describe("updatePerson", () => {
 	beforeEach(async () => {
 		owner = await createAccount({ isCurrentActive: true })
 	})
+
+	async function setPersonDeletedAt(personId: string, deletedAt?: Date) {
+		await updatePerson(owner, { personId, deletedAt })
+	}
+
+	async function namesByList() {
+		let { root } = await owner.$jazz.ensureLoaded({
+			resolve: {
+				root: { people: { $each: true }, inactivePeople: { $each: true } },
+			},
+		})
+		return {
+			active: root.people.map(p => p.name),
+			inactive: root.inactivePeople?.map(p => p.name),
+		}
+	}
 
 	test("updates name and summary, returns previous + current", async () => {
 		let person = await seedPerson(owner, {
@@ -23,12 +43,25 @@ describe("updatePerson", () => {
 			name: "Ada L.",
 			summary: "new summary",
 		})
-
-		expect(result.operation).toBe("update")
-		expect(result.previous.name).toBe("Ada")
-		expect(result.previous.summary).toBe("old summary")
-		expect(result.current.name).toBe("Ada L.")
-		expect(result.current.summary).toBe("new summary")
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "createdAt": "<time>",
+			    "name": "Ada L.",
+			    "personId": "<id>",
+			    "summary": "new summary",
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "update",
+			  "previous": {
+			    "createdAt": "<time>",
+			    "name": "Ada",
+			    "personId": "<id>",
+			    "summary": "old summary",
+			    "updatedAt": "<time>",
+			  },
+			}
+		`)
 	})
 
 	test("partial update leaves untouched fields", async () => {
@@ -41,50 +74,22 @@ describe("updatePerson", () => {
 			personId: person.$jazz.id,
 			name: "Ada L.",
 		})
-
 		expect(result.current.summary).toBe("keep this")
 	})
 
 	test("soft delete moves person from active to inactivePeople", async () => {
 		let person = await seedPerson(owner, { name: "Bye" })
 
-		await updatePerson(owner, {
-			personId: person.$jazz.id,
-			deletedAt: new Date(),
-		})
-
-		let { root } = await owner.$jazz.ensureLoaded({
-			resolve: {
-				root: { people: { $each: true }, inactivePeople: { $each: true } },
-			},
-		})
-		expect(root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(false)
-		expect(
-			root.inactivePeople?.some(p => p?.$jazz.id === person.$jazz.id),
-		).toBe(true)
+		await setPersonDeletedAt(person.$jazz.id, new Date())
+		expect(await namesByList()).toEqual({ active: [], inactive: ["Bye"] })
 	})
 
 	test("restore moves back from inactivePeople to active", async () => {
 		let person = await seedPerson(owner, { name: "Back" })
-		await updatePerson(owner, {
-			personId: person.$jazz.id,
-			deletedAt: new Date(),
-		})
+		await setPersonDeletedAt(person.$jazz.id, new Date())
 
-		await updatePerson(owner, {
-			personId: person.$jazz.id,
-			deletedAt: undefined,
-		})
-
-		let { root } = await owner.$jazz.ensureLoaded({
-			resolve: {
-				root: { people: { $each: true }, inactivePeople: { $each: true } },
-			},
-		})
-		expect(root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(true)
-		expect(
-			root.inactivePeople?.some(p => p?.$jazz.id === person.$jazz.id),
-		).toBe(false)
+		await setPersonDeletedAt(person.$jazz.id, undefined)
+		expect(await namesByList()).toEqual({ active: ["Back"], inactive: [] })
 	})
 
 	test("throws when person not found", async () => {
