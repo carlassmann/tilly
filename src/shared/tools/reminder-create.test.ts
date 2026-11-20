@@ -9,11 +9,12 @@ import {
 	seedPerson,
 } from "#shared/tools/test-helpers"
 
-function describeStored(
-	reminder: { $jazz: { id: string }; text: string },
+function createdAndStored(
 	createdId: string,
+	reminders: { $jazz: { id: string }; text: string }[],
 ) {
-	return `${reminder.$jazz.id === createdId ? "created" : "other"}: ${reminder.text}`
+	let stored = reminders.map(r => ({ id: r.$jazz.id, text: r.text }))
+	return redactNoise({ created: createdId, stored })
 }
 
 describe("createReminder", () => {
@@ -37,8 +38,8 @@ describe("createReminder", () => {
 			    "createdAt": "<time>",
 			    "done": false,
 			    "dueAtDate": "2099-01-01",
-			    "personId": "<id>",
-			    "reminderId": "<id>",
+			    "personId": "<id:2>",
+			    "reminderId": "<id:1>",
 			    "text": "call back",
 			    "updatedAt": "<time>",
 			  },
@@ -49,11 +50,18 @@ describe("createReminder", () => {
 		let loaded = await person.$jazz.ensureLoaded({
 			resolve: { reminders: { $each: true } },
 		})
-		expect(
-			loaded.reminders
-				.map(r => describeStored(r, result.current.reminderId))
-				.join(", "),
-		).toMatchInlineSnapshot(`"created: call back"`)
+		expect(createdAndStored(result.current.reminderId, [...loaded.reminders]))
+			.toMatchInlineSnapshot(`
+			{
+			  "created": "<id:1>",
+			  "stored": [
+			    {
+			      "id": "<id:1>",
+			      "text": "call back",
+			    },
+			  ],
+			}
+		`)
 	})
 
 	test("persists repeat config", async () => {
@@ -103,11 +111,18 @@ describe("createReminder", () => {
 			let loaded = await person.$jazz.ensureLoaded({
 				resolve: { reminders: { $each: true } },
 			})
-			expect(
-				loaded.reminders
-					.map(r => describeStored(r, result.current.reminderId))
-					.join(", "),
-			).toMatchInlineSnapshot(`"created: from other"`)
+			expect(createdAndStored(result.current.reminderId, [...loaded.reminders]))
+				.toMatchInlineSnapshot(`
+				{
+				  "created": "<id:1>",
+				  "stored": [
+				    {
+				      "id": "<id:1>",
+				      "text": "from other",
+				    },
+				  ],
+				}
+			`)
 		})
 	})
 })

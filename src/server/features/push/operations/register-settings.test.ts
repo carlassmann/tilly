@@ -118,14 +118,14 @@ describe("registerNotificationSettingsWithServer", () => {
 		expect({
 			firstOk: firstResult.isOk(),
 			refCount: Object.keys(refs ?? {}).length,
-			lastSyncedAtAdvanced: secondSyncTime! > firstSyncTime!,
 		}).toMatchInlineSnapshot(`
 			{
 			  "firstOk": true,
-			  "lastSyncedAtAdvanced": true,
 			  "refCount": 1,
 			}
 		`)
+		// eslint-disable-next-line architecture/expect-tests-only -- invariant: re-registering refreshes lastSyncedAt
+		expect(secondSyncTime!.getTime()).toBeGreaterThan(firstSyncTime!.getTime())
 	})
 
 	test("returns error when server cannot access settings", async () => {

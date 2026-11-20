@@ -61,9 +61,9 @@ describe("listNotes", () => {
 			      "content": "grace-1",
 			      "createdAt": "<time>",
 			      "deleted": false,
-			      "id": "<id>",
+			      "id": "<id:1>",
 			      "person": {
-			        "id": "<id>",
+			        "id": "<id:2>",
 			        "name": "Grace",
 			      },
 			      "pinned": false,
@@ -74,9 +74,9 @@ describe("listNotes", () => {
 			      "content": "ada-1",
 			      "createdAt": "<time>",
 			      "deleted": false,
-			      "id": "<id>",
+			      "id": "<id:3>",
 			      "person": {
-			        "id": "<id>",
+			        "id": "<id:4>",
 			        "name": "Ada",
 			      },
 			      "pinned": false,
@@ -118,16 +118,17 @@ describe("listNotes", () => {
 				searchQuery,
 				includeDeleted: false,
 			})
-			return `${searchQuery} -> ${describeNotes(result).join(", ")}`
+			let counts = `${result.filteredCount}/${result.totalCount}`
+			return `${searchQuery} -> ${counts}: ${describeNotes(result).join(", ")}`
 		}
 		let table = await Promise.all(
 			["needle here", "needle title", "grace"].map(search),
 		)
 		expect(table).toMatchInlineSnapshot(`
 			[
-			  "needle here -> needle here · Ada",
-			  "needle title -> boring · Ada",
-			  "grace -> plain · Grace",
+			  "needle here -> 1/3: needle here · Ada",
+			  "needle title -> 1/3: boring · Ada",
+			  "grace -> 1/3: plain · Grace",
 			]
 		`)
 	})

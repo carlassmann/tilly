@@ -21,7 +21,7 @@ describe("createPerson", () => {
 			  "current": {
 			    "createdAt": "<time>",
 			    "name": "Ada Lovelace",
-			    "personId": "<id>",
+			    "personId": "<id:1>",
 			    "summary": "mathematician",
 			    "updatedAt": "<time>",
 			  },
@@ -32,11 +32,19 @@ describe("createPerson", () => {
 		let { root } = await owner.$jazz.ensureLoaded({
 			resolve: { root: { people: { $each: true } } },
 		})
-		let describeStored = (p: (typeof root.people)[number]) =>
-			`${p.$jazz.id === result.current.personId ? "created" : "other"}: ${p.name}`
-		expect(root.people.map(describeStored).join(", ")).toMatchInlineSnapshot(
-			`"created: Ada Lovelace"`,
-		)
+		let stored = root.people.map(p => ({ id: p.$jazz.id, name: p.name }))
+		expect(redactNoise({ created: result.current.personId, stored }))
+			.toMatchInlineSnapshot(`
+			{
+			  "created": "<id:1>",
+			  "stored": [
+			    {
+			      "id": "<id:1>",
+			      "name": "Ada Lovelace",
+			    },
+			  ],
+			}
+		`)
 	})
 
 	test("created person reloads from its ID with content intact", async () => {

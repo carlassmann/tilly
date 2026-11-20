@@ -1,6 +1,6 @@
 # Testing
 
-Unit tests in `src/` are expect tests: the code produces the output, you review it once, `toMatchInlineSnapshot` locks it in. Hand-written expected values are banned by ESLint (`vitest/no-restricted-matchers`).
+Unit tests in `src/` (`*.test.ts(x)` and `*.spec.ts(x)`) are expect tests: the code produces the output, you review it once, `toMatchInlineSnapshot` locks it in. Hand-written expected values are banned by ESLint (`architecture/expect-tests-only`).
 
 ## Writing one
 
@@ -25,20 +25,32 @@ expect(table).toMatchInlineSnapshot()
 - State: one compact string per item, e.g. `"pinned-1 · Ada · pinned"`, or `{ active: [...], inactive: [...] }`.
 - AI tools: one full-payload snapshot per tool file (what the model sees). Wrap it in `redactNoise` from `#shared/tools/test-helpers` so ids and timestamps don't change every run. Other tests snapshot only the part they are about.
 
-## Exceptions: must-hold rules
+## What the rule allows
 
-Thrown errors use `toThrow` / `rejects.toThrow` (allowed).
+Every `expect(...)`, `expect.soft(...)` and `expect.poll(...)` chain must end in one of:
+
+- `toMatchInlineSnapshot`
+- `toThrow`, `toThrowError`, `toThrowErrorMatchingInlineSnapshot` (also after `rejects.` / `resolves.`)
+
+Also reported:
+
+- any other matcher, including `toSatisfy`, `toMatch` and custom matchers
+- `.not.` matchers, including `not.toThrow`: snapshot the result instead
+- `assert` from `vitest`, `chai` or `node:assert`, and `assert(...)` / `assert.*(...)` calls
+- comparisons (`===`, `<`, ...) inside `expect(...)`, even in a template string: ``expect(`${a === b}`)`` snapshots `"true"` and hides the values. Snapshot the values themselves.
+
+## Exceptions: must-hold rules
 
 A rule that must always hold, where a snapshot hides the intent, may use a plain matcher with a reason:
 
 ```ts
-// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: deleted notes never reach the AI
+// eslint-disable-next-line architecture/expect-tests-only -- invariant: deleted notes never reach the AI
 expect(result.notes).not.toContainEqual(deletedNote)
 ```
 
-The description is required. Keep these rare.
+The `-- invariant: <why>` description is required. Only `eslint-disable-next-line` and `eslint-disable-line` may opt out; block or file-wide `eslint-disable`, disables without a rule list and inline `/* eslint ... */` config of the rule are errors that no directive can suppress. Keep these rare.
 
 ## Out of scope
 
-- `tools/eslint-plugin-architecture` rule tests (`RuleTester` tables)
+- Tests under `tools/`, e.g. the `tools/eslint-plugin-architecture` rule tests (`RuleTester` tables)
 - Playwright e2e tests in `e2e/`

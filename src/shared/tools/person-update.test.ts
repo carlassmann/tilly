@@ -47,7 +47,7 @@ describe("updatePerson", () => {
 			  "current": {
 			    "createdAt": "<time>",
 			    "name": "Ada L.",
-			    "personId": "<id>",
+			    "personId": "<id:1>",
 			    "summary": "new summary",
 			    "updatedAt": "<time>",
 			  },
@@ -55,7 +55,7 @@ describe("updatePerson", () => {
 			  "previous": {
 			    "createdAt": "<time>",
 			    "name": "Ada",
-			    "personId": "<id>",
+			    "personId": "<id:1>",
 			    "summary": "old summary",
 			    "updatedAt": "<time>",
 			  },

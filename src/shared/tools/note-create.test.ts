@@ -35,23 +35,33 @@ describe("createNote", () => {
 			  "current": {
 			    "content": "first note",
 			    "createdAt": "<time>",
-			    "noteId": "<id>",
-			    "personId": "<id>",
+			    "noteId": "<id:1>",
+			    "personId": "<id:2>",
 			    "pinned": false,
 			    "updatedAt": "<time>",
 			  },
 			  "operation": "create",
 			}
 		`)
-		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: the note links back to the person it was created for
+		// eslint-disable-next-line architecture/expect-tests-only -- invariant: the note links back to the person it was created for
 		expect(result.current.personId).toBe(person.$jazz.id)
 
-		let stored = await storedNotes(person)
-		let describeStored = (n: (typeof stored)[number]) =>
-			`${n.$jazz.id === result.current.noteId ? "created" : "other"}: ${n.content}`
-		expect(stored.map(describeStored).join(", ")).toMatchInlineSnapshot(
-			`"created: first note"`,
-		)
+		let stored = (await storedNotes(person)).map(n => ({
+			id: n.$jazz.id,
+			content: n.content,
+		}))
+		expect(redactNoise({ created: result.current.noteId, stored }))
+			.toMatchInlineSnapshot(`
+			{
+			  "created": "<id:1>",
+			  "stored": [
+			    {
+			      "content": "first note",
+			      "id": "<id:1>",
+			    },
+			  ],
+			}
+		`)
 	})
 
 	test("content survives a reload via Note.load", async () => {
@@ -81,7 +91,7 @@ describe("createNote", () => {
 			content: "x",
 		})
 
-		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: any edit moves the person's updatedAt forward
+		// eslint-disable-next-line architecture/expect-tests-only -- invariant: any edit moves the person's updatedAt forward
 		expect(person.updatedAt.getTime()).toBeGreaterThan(before)
 	})
 

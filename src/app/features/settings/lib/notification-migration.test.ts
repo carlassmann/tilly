@@ -22,7 +22,7 @@ describe("copyNotificationSettingsData", () => {
 			latestReminderDueDate: "2025-02-01",
 			pushDevices: [device("iPhone", true), device("iPad", false)],
 		}
-		// eslint-disable-next-line vitest/no-restricted-matchers -- invariant: migration must not lose any setting or device
+		// eslint-disable-next-line architecture/expect-tests-only -- invariant: migration must not lose any setting or device
 		expect(copyNotificationSettingsData(settings, undefined)).toEqual(settings)
 	})
 

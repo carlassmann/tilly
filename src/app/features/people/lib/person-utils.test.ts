@@ -29,6 +29,12 @@ test("isPersonAdmin", async () => {
 
 test("getPersonOwnerName returns the admin's profile name for a group-owned person", async () => {
 	let owner = await createAccount({ isCurrentActive: true })
+	let { profile } = await owner.$jazz.ensureLoaded({
+		resolve: { profile: true },
+	})
+	profile.$jazz.set("name", "Olivia Owner")
 	let person = await seedPerson(owner, { name: "Ada" })
-	expect(await getPersonOwnerName(person)).toMatchInlineSnapshot(`"Anonymous"`)
+	expect(await getPersonOwnerName(person)).toMatchInlineSnapshot(
+		`"Olivia Owner"`,
+	)
 })

@@ -9,30 +9,30 @@ import { getReferenceDate, getDeletedDate } from "./reminder-dates"
 test("getReferenceDate and getDeletedDate", async () => {
 	let owner = await createAccount({ isCurrentActive: true })
 	let person = await seedPerson(owner, { name: "Ada" })
-	let deletedAt = new Date("2025-03-01")
+	let createdAt = new Date("2025-01-01")
+	let updatedAt = new Date("2025-01-15")
 	let deleted = await seedReminder(person, {
 		text: "old",
 		dueAtDate: "2025-02-01",
-		deletedAt,
+		deletedAt: new Date("2025-03-01"),
+		createdAt,
+		updatedAt,
 	})
 	let active = await seedReminder(person, {
 		text: "active",
 		dueAtDate: "2025-06-01",
+		createdAt,
+		updatedAt,
 	})
-	let referenceDate = getReferenceDate(active)
 	expect({
-		referenceDateIsUpdatedAt:
-			referenceDate.getTime() === active.updatedAt?.getTime(),
-		referenceDateIsDate: referenceDate instanceof Date,
-		deletedDateOfDeleted: getDeletedDate(deleted).toISOString(),
-		deletedDateOfActiveIsReferenceDate:
-			getDeletedDate(active).getTime() === referenceDate.getTime(),
+		referenceDateOfActive: getReferenceDate(active),
+		deletedDateOfDeleted: getDeletedDate(deleted),
+		deletedDateOfActive: getDeletedDate(active),
 	}).toMatchInlineSnapshot(`
 		{
-		  "deletedDateOfActiveIsReferenceDate": true,
-		  "deletedDateOfDeleted": "2025-03-01T00:00:00.000Z",
-		  "referenceDateIsDate": true,
-		  "referenceDateIsUpdatedAt": true,
+		  "deletedDateOfActive": 2025-01-15T00:00:00.000Z,
+		  "deletedDateOfDeleted": 2025-03-01T00:00:00.000Z,
+		  "referenceDateOfActive": 2025-01-15T00:00:00.000Z,
 		}
 	`)
 })

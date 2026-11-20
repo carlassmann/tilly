@@ -11,7 +11,11 @@ import {
 	removeInviteGroup,
 } from "./person-sharing"
 import { parseInviteHash } from "./invite"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	createAccount,
+	redactNoise,
+	seedPerson,
+} from "#shared/tools/test-helpers"
 import { updatePerson } from "#shared/tools/person-update"
 
 let BASE_URL = "http://test.invalid/app/invite"
@@ -74,10 +78,12 @@ describe("Person sharing", () => {
 			let full = await loadFullPerson(person)
 
 			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			expect(link).toMatch(
-				new RegExp(
-					`^${BASE_URL.replace(/\./g, "\\.")}#/person/co_[^/]+/invite/co_[^/]+/inviteSecret_`,
-				),
+			let [personId, ...path] = redactNoise([
+				person.$jazz.id,
+				...link.replace(/inviteSecret_\w+/, "inviteSecret_<secret>").split("/"),
+			])
+			expect(`person ${personId}: ${path.join("/")}`).toMatchInlineSnapshot(
+				`"person <id:1>: http://test.invalid/app/invite#/person/<id:1>/invite/<id:2>/inviteSecret_<secret>"`,
 			)
 		})
 
@@ -85,8 +91,13 @@ describe("Person sharing", () => {
 			let person = await seedPerson(owner, { name: "Ada" })
 			let parsed = await createInvite(person)
 			expect(
-				`resolves to original: ${parsed.personId === person.$jazz.id}`,
-			).toMatchInlineSnapshot(`"resolves to original: true"`)
+				redactNoise({ original: person.$jazz.id, parsed: parsed.personId }),
+			).toMatchInlineSnapshot(`
+				{
+				  "original": "<id:1>",
+				  "parsed": "<id:1>",
+				}
+			`)
 		})
 	})
 
@@ -99,8 +110,20 @@ describe("Person sharing", () => {
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
 			let people = await loadInviteePeople(invitee)
 			expect(
-				`${result.status}, in invitee people: ${people.some(p => p?.$jazz.id === person.$jazz.id)}`,
-			).toMatchInlineSnapshot(`"accepted, in invitee people: true"`)
+				redactNoise({
+					status: result.status,
+					shared: person.$jazz.id,
+					inviteePeople: people.map(p => p?.$jazz.id),
+				}),
+			).toMatchInlineSnapshot(`
+				{
+				  "inviteePeople": [
+				    "<id:1>",
+				  ],
+				  "shared": "<id:1>",
+				  "status": "accepted",
+				}
+			`)
 		})
 
 		test("invitee can edit the shared person (writer role grants write access)", async () => {
@@ -131,10 +154,24 @@ describe("Person sharing", () => {
 			let second = await acceptPersonInvite(loadedInvitee, parsed)
 
 			let people = await loadInviteePeople(invitee)
-			let copies = people.filter(p => p?.$jazz.id === person.$jazz.id).length
 			expect(
-				`${first.status} -> ${second.status}, copies: ${copies}`,
-			).toMatchInlineSnapshot(`"accepted -> already-member, copies: 1"`)
+				redactNoise({
+					statuses: [first.status, second.status],
+					shared: person.$jazz.id,
+					inviteePeople: people.map(p => p?.$jazz.id),
+				}),
+			).toMatchInlineSnapshot(`
+				{
+				  "inviteePeople": [
+				    "<id:1>",
+				  ],
+				  "shared": "<id:1>",
+				  "statuses": [
+				    "accepted",
+				    "already-member",
+				  ],
+				}
+			`)
 		})
 	})
 
@@ -178,24 +215,36 @@ describe("Person sharing", () => {
 			let reloadedPerson = await Person.load(person.$jazz.id)
 			if (!reloadedPerson?.$isLoaded) throw new Error("person gone")
 			let withMembersAfter = await getInviteGroupsWithMembers(reloadedPerson)
-			let groupAfter = withMembersAfter.find(
-				g => g.groupId === parsed.inviteGroupId,
-			)
-			expect({
-				pendingBefore: pendingBefore.some(
-					p => p.groupId === parsed.inviteGroupId,
-				),
-				groupsWithMembersBefore: withMembersBefore.length,
-				groupWithMembersAfter: groupAfter !== undefined,
-				inviteeIsMember: groupAfter?.members.some(
-					m => m.id === invitee.$jazz.id,
-				),
-			}).toMatchInlineSnapshot(`
+			expect(
+				redactNoise({
+					inviteGroup: parsed.inviteGroupId,
+					invitee: invitee.$jazz.id,
+					pendingBefore: pendingBefore.map(p => p.groupId),
+					withMembersBefore,
+					withMembersAfter,
+				}),
+			).toMatchInlineSnapshot(`
 				{
-				  "groupWithMembersAfter": true,
-				  "groupsWithMembersBefore": 0,
-				  "inviteeIsMember": true,
-				  "pendingBefore": true,
+				  "inviteGroup": "<id:1>",
+				  "invitee": "<id:2>",
+				  "pendingBefore": [
+				    "<id:1>",
+				  ],
+				  "withMembersAfter": [
+				    {
+				      "createdAt": "<time>",
+				      "groupId": "<id:1>",
+				      "members": [
+				        {
+				          "id": "<id:2>",
+				          "inviteGroupId": "<id:1>",
+				          "name": "Anonymous",
+				          "role": "writer",
+				        },
+				      ],
+				    },
+				  ],
+				  "withMembersBefore": [],
 				}
 			`)
 		})
@@ -242,15 +291,19 @@ describe("Person sharing", () => {
 			let { loadedInvitee } = await signUpInvitee()
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
 			expect({
-				isNewPerson: parsed.personId !== original.$jazz.id,
+				...redactNoise({
+					original: original.$jazz.id,
+					invited: parsed.personId,
+				}),
 				name: migrated.name,
 				groupOwned: isGroupOwned(migrated),
 				status: result.status,
 			}).toMatchInlineSnapshot(`
 				{
 				  "groupOwned": true,
-				  "isNewPerson": true,
+				  "invited": "<id:2>",
 				  "name": "Legacy",
+				  "original": "<id:1>",
 				  "status": "accepted",
 				}
 			`)

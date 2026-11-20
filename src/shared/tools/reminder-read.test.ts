@@ -45,9 +45,9 @@ describe("listReminders", () => {
 			      "createdAt": "<time>",
 			      "done": false,
 			      "dueAtDate": "2099-01-01",
-			      "id": "<id>",
+			      "id": "<id:1>",
 			      "person": {
-			        "id": "<id>",
+			        "id": "<id:2>",
 			        "name": "Ada",
 			      },
 			      "text": "ada-1",
@@ -57,9 +57,9 @@ describe("listReminders", () => {
 			      "createdAt": "<time>",
 			      "done": false,
 			      "dueAtDate": "2099-01-01",
-			      "id": "<id>",
+			      "id": "<id:3>",
 			      "person": {
-			        "id": "<id>",
+			        "id": "<id:4>",
 			        "name": "Grace",
 			      },
 			      "text": "grace-1",

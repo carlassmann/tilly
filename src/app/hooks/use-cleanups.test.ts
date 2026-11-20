@@ -75,6 +75,8 @@ describe("isStale", () => {
 	})
 })
 
+type Item = { $jazz: { id: string }; content?: string; text?: string }
+
 describe("cleanupInactiveLists", () => {
 	let owner: co.loaded<typeof UserAccount>
 
@@ -106,16 +108,25 @@ describe("cleanupInactiveLists", () => {
 	test("moves deleted notes and deleted or done reminders to inactive lists", async () => {
 		let person = await seedPerson(owner, { name: "Ada" })
 		await ensureInactiveLists(person)
-		await seedNote(person, { content: "active note" })
-		await seedNote(person, { content: "to delete", deletedAt: daysAgo(1) })
-		let dueAtDate = "2025-01-01"
-		await seedReminder(person, { text: "active task", dueAtDate: "2025-12-01" })
-		await seedReminder(person, {
-			text: "old task",
-			dueAtDate,
-			deletedAt: daysAgo(1),
-		})
-		await seedReminder(person, { text: "done task", dueAtDate, done: true })
+		let seeded = [
+			await seedNote(person, { content: "active note" }),
+			await seedNote(person, { content: "to delete", deletedAt: daysAgo(1) }),
+			await seedReminder(person, {
+				text: "active task",
+				dueAtDate: "2025-12-01",
+			}),
+			await seedReminder(person, {
+				text: "old task",
+				dueAtDate: "2025-01-01",
+				deletedAt: daysAgo(1),
+			}),
+			await seedReminder(person, {
+				text: "done task",
+				dueAtDate: "2025-01-01",
+				done: true,
+			}),
+		]
+		let seededIds = new Set(seeded.map(item => item.$jazz.id))
 
 		await runCleanup()
 
@@ -127,11 +138,19 @@ describe("cleanupInactiveLists", () => {
 				inactiveReminders: { $each: true },
 			},
 		})
+		// A copy would lose the original's id and the links pointing to it.
+		let describeItems = (items: readonly Item[] | undefined) =>
+			items
+				?.map(
+					i =>
+						`${i.content ?? i.text}${seededIds.has(i.$jazz.id) ? "" : " (copy)"}`,
+				)
+				.join(", ")
 		expect([
-			`notes: ${after.notes.map(n => n.content).join(", ")}`,
-			`inactiveNotes: ${after.inactiveNotes?.map(n => n.content).join(", ")}`,
-			`reminders: ${after.reminders.map(r => r.text).join(", ")}`,
-			`inactiveReminders: ${after.inactiveReminders?.map(r => r.text).join(", ")}`,
+			`notes: ${describeItems(after.notes)}`,
+			`inactiveNotes: ${describeItems(after.inactiveNotes)}`,
+			`reminders: ${describeItems(after.reminders)}`,
+			`inactiveReminders: ${describeItems(after.inactiveReminders)}`,
 		]).toMatchInlineSnapshot(`
 			[
 			  "notes: active note",

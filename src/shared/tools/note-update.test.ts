@@ -53,8 +53,8 @@ describe("updateNote", () => {
 			  "current": {
 			    "content": "after",
 			    "createdAt": "<time>",
-			    "noteId": "<id>",
-			    "personId": "<id>",
+			    "noteId": "<id:1>",
+			    "personId": "<id:2>",
 			    "pinned": false,
 			    "updatedAt": "<time>",
 			  },
@@ -62,8 +62,8 @@ describe("updateNote", () => {
 			  "previous": {
 			    "content": "before",
 			    "createdAt": "<time>",
-			    "noteId": "<id>",
-			    "personId": "<id>",
+			    "noteId": "<id:1>",
+			    "personId": "<id:2>",
 			    "pinned": false,
 			    "updatedAt": "<time>",
 			  },

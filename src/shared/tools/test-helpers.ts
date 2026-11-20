@@ -81,6 +81,8 @@ async function seedReminder(
 		done?: boolean
 		deletedAt?: Date
 		repeat?: { interval: number; unit: "day" | "week" | "month" | "year" }
+		createdAt?: Date
+		updatedAt?: Date
 	},
 ) {
 	let loaded = await person.$jazz.ensureLoaded({
@@ -95,8 +97,8 @@ async function seedReminder(
 			done: args.done ?? false,
 			repeat: args.repeat,
 			deletedAt: args.deletedAt,
-			createdAt: now,
-			updatedAt: now,
+			createdAt: args.createdAt ?? now,
+			updatedAt: args.updatedAt ?? now,
 		},
 		loaded.$jazz.owner,
 	)
@@ -105,10 +107,19 @@ async function seedReminder(
 }
 
 // Expect tests snapshot whole outputs; ids and timestamps differ every run.
+// Ids get aliases by first appearance so relationships between them stay visible.
 function redactNoise(value: unknown) {
-	return JSON.parse(
-		JSON.stringify(value)
-			.replace(/co_z\w+/g, "<id>")
-			.replace(/\d{4}-\d\d-\d\dT[\d:.]+Z/g, "<time>"),
+	let aliases = new Map<string, string>()
+	function redactString(text: string) {
+		if (isoTimestamp.test(text)) return "<time>"
+		if (!jazzId.test(text)) return text
+		if (!aliases.has(text)) aliases.set(text, `<id:${aliases.size + 1}>`)
+		return aliases.get(text)
+	}
+	return JSON.parse(JSON.stringify(value), (_key, item) =>
+		typeof item === "string" ? redactString(item) : item,
 	)
 }
+
+let jazzId = /^co_z\w+$/
+let isoTimestamp = /^\d{4}-\d\d-\d\dT[\d:.]+Z$/

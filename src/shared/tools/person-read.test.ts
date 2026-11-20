@@ -107,7 +107,7 @@ describe("getPersonDetails", () => {
 			    {
 			      "content": "note one",
 			      "createdAt": "<time>",
-			      "id": "<id>",
+			      "id": "<id:2>",
 			      "pinned": false,
 			      "title": "",
 			      "updatedAt": "<time>",
@@ -115,18 +115,18 @@ describe("getPersonDetails", () => {
 			    {
 			      "content": "note two",
 			      "createdAt": "<time>",
-			      "id": "<id>",
+			      "id": "<id:3>",
 			      "pinned": false,
 			      "title": "",
 			      "updatedAt": "<time>",
 			    },
 			  ],
-			  "personId": "<id>",
+			  "personId": "<id:1>",
 			  "reminders": [
 			    {
 			      "createdAt": "<time>",
 			      "dueAtDate": "2099-01-01",
-			      "id": "<id>",
+			      "id": "<id:4>",
 			      "text": "ping",
 			      "updatedAt": "<time>",
 			    },
