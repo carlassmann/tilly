@@ -7,6 +7,7 @@ import {
 	redactNoise,
 	createAccount,
 	seedPerson,
+	requireLoaded,
 } from "#shared/tools/test-helpers"
 
 function createdAndStored(
@@ -74,8 +75,10 @@ describe("createReminder", () => {
 			repeat: { interval: 1, unit: "week" },
 		})
 
-		let reloaded = await Reminder.load(result.current.reminderId)
-		if (!reloaded?.$isLoaded) throw new Error("reminder not loaded")
+		let reloaded = requireLoaded(
+			await Reminder.load(result.current.reminderId),
+			"reminder",
+		)
 		let { interval, unit } = reloaded.repeat ?? {}
 		expect(`every ${interval} ${unit}`).toMatchInlineSnapshot(`"every 1 week"`)
 	})

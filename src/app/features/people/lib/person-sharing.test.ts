@@ -15,6 +15,7 @@ import {
 	createAccount,
 	redactNoise,
 	seedPerson,
+	requireLoaded,
 } from "#shared/tools/test-helpers"
 import { updatePerson } from "#shared/tools/person-update"
 
@@ -212,8 +213,10 @@ describe("Person sharing", () => {
 			await invitee.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)
-			let reloadedPerson = await Person.load(person.$jazz.id)
-			if (!reloadedPerson?.$isLoaded) throw new Error("person gone")
+			let reloadedPerson = requireLoaded(
+				await Person.load(person.$jazz.id),
+				"person",
+			)
 			let withMembersAfter = await getInviteGroupsWithMembers(reloadedPerson)
 			expect(
 				redactNoise({
@@ -277,16 +280,24 @@ describe("Person sharing", () => {
 		test("isGroupOwned is true only for group-owned persons", async () => {
 			let accountOwned = await seedAccountOwnedPerson(owner, "Legacy")
 			let groupOwned = await seedPerson(owner, { name: "Modern" })
-			expect(
-				`account-owned: ${isGroupOwned(await loadFullPerson(accountOwned))}, group-owned: ${isGroupOwned(await loadFullPerson(groupOwned))}`,
-			).toMatchInlineSnapshot(`"account-owned: false, group-owned: true"`)
+			expect({
+				accountOwned: isGroupOwned(await loadFullPerson(accountOwned)),
+				groupOwned: isGroupOwned(await loadFullPerson(groupOwned)),
+			}).toMatchInlineSnapshot(`
+				{
+				  "accountOwned": false,
+				  "groupOwned": true,
+				}
+			`)
 		})
 
 		test("inviting an account-owned person migrates it and yields a working link", async () => {
 			let original = await seedAccountOwnedPerson(owner, "Legacy")
 			let parsed = await createInvite(original)
-			let migrated = await Person.load(parsed.personId)
-			if (!migrated?.$isLoaded) throw new Error("migrated person not loaded")
+			let migrated = requireLoaded(
+				await Person.load(parsed.personId),
+				"migrated person",
+			)
 
 			let { loadedInvitee } = await signUpInvitee()
 			let result = await acceptPersonInvite(loadedInvitee, parsed)

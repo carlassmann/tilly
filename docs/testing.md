@@ -1,6 +1,6 @@
 # Testing
 
-Unit tests in `src/` (`*.test.ts(x)` and `*.spec.ts(x)`) are expect tests: the code produces the output, you review it once, `toMatchInlineSnapshot` locks it in. Hand-written expected values are banned by ESLint (`architecture/expect-tests-only`).
+Unit tests in `src/` (`*.test.ts(x)` and `*.spec.ts(x)`) and their shared helpers (`src/**/test-helpers.ts`, `test-stubs/`) are expect tests: the code produces the output, you review it once, `toMatchInlineSnapshot` locks it in. Hand-written expected values are banned by ESLint (`architecture/expect-tests-only`).
 
 ## Writing one
 
@@ -37,7 +37,15 @@ Also reported:
 - any other matcher, including `toSatisfy`, `toMatch` and custom matchers
 - `.not.` matchers, including `not.toThrow`: snapshot the result instead
 - `assert` from `vitest`, `chai` or `node:assert`, and `assert(...)` / `assert.*(...)` calls
-- comparisons (`===`, `<`, ...) inside `expect(...)`, even in a template string: ``expect(`${a === b}`)`` snapshots `"true"` and hides the values. Snapshot the values themselves.
+- a subject whose TypeScript type is boolean (`boolean`, `true`, `false`), e.g. `expect(a === b)` or `expect(list.includes(x))`: the snapshot `true` hides the values. Snapshot the values themselves. Booleans as fields are fine: `expect({ done, dueAtDate })`.
+- a boolean interpolated into a template string written in the subject, also inside object or array literals there: ``expect(`${a === b}`)``. A table built before the `expect` (see above) is fine, since each row shows its inputs.
+- `throw` directly in a `test`/`it` callback or a `beforeEach`/`afterEach`/`beforeAll`/`afterAll` hook: `if (x !== y) throw` is a hand-written assertion. Throws inside helper functions and stubs are allowed; use them to narrow types in setup, e.g. `requireLoaded(await Person.load(id), "person")` from `#shared/tools/test-helpers`.
+
+The boolean checks use type information, so values typed `any` are not checked. Type-aware linting runs only for the files above.
+
+Also checked at runtime: `vitest.setup.ts` fails `toMatchInlineSnapshot` and `toMatchSnapshot` when the received value is a bare boolean, including after `resolves.`. This also catches what the lint rule cannot see, e.g. an `any`-typed subject.
+
+Compile-time checks `expectTypeOf` and `assertType` from `vitest` are allowed: they check types, not hand-written runtime values.
 
 ## Exceptions: must-hold rules
 

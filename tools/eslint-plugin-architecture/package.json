@@ -5,7 +5,8 @@
 	"type": "module",
 	"main": "index.js",
 	"peerDependencies": {
-		"eslint": ">=9"
+		"eslint": ">=9",
+		"typescript": ">=5"
 	},
 	"dependencies": {
 		"@typescript-eslint/parser": "^8.59.2",

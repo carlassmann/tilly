@@ -1,4 +1,5 @@
 import { ESLintUtils } from "@typescript-eslint/utils"
+import ts from "typescript"
 const createRule = ESLintUtils.RuleCreator(
 	name =>
 		`https://github.com/ccssmnn/tilly/blob/main/tools/eslint-plugin-architecture/README.md#${name}`,
@@ -10,15 +11,13 @@ const ALLOWED_MATCHERS = new Set([
 	"toThrowErrorMatchingInlineSnapshot",
 ])
 const EXPECT_VARIANTS = new Set(["soft", "poll"])
-const COMPARISON_OPERATORS = new Set([
-	"===",
-	"!==",
-	"==",
-	"!=",
-	"<",
-	">",
-	"<=",
-	">=",
+const TEST_FUNCTIONS = new Set([
+	"test",
+	"it",
+	"beforeEach",
+	"afterEach",
+	"beforeAll",
+	"afterAll",
 ])
 const ASSERT_MODULES = new Set([
 	"assert",
@@ -45,14 +44,26 @@ export default createRule({
 			missingMatcher: `expect(...) must end in a matcher call: ${ALLOWED_LIST}.`,
 			assertStyle:
 				"`{{name}}` hand-writes the expected value. Snapshot real output with toMatchInlineSnapshot.",
-			comparisonInSubject:
-				"`{{operator}}` inside expect(...) hides the compared values. Snapshot the values themselves.",
+			booleanSubject:
+				"Snapshotting a boolean hides the values it was computed from. Snapshot the values themselves.",
+			booleanInTemplate:
+				"A boolean inside a template string in expect(...) hides the values it was computed from. Snapshot the values themselves.",
+			throwInTest:
+				"`throw` in a test or hook asserts by hand. Snapshot the value, or move type-narrowing setup into a helper function.",
 		},
 		schema: [],
 	},
 	defaultOptions: [],
 	create(context) {
 		let expectNames = new Set(["expect"])
+		let services = ESLintUtils.getParserServices(context)
+		let checker = services.program.getTypeChecker()
+
+		function isBoolean(node, { awaited = false } = {}) {
+			let type = services.getTypeAtLocation(node)
+			if (awaited) type = checker.getAwaitedType(type) ?? type
+			return isBooleanType(type)
+		}
 
 		function isExpectSubject(node) {
 			if (node.type !== "CallExpression") return false
@@ -66,8 +77,22 @@ export default createRule({
 			)
 		}
 
+		function checkSubjectValue(subject, chain) {
+			let value = subject.arguments[0]
+			if (!value || value.type === "SpreadElement") return
+			if (isBoolean(value, { awaited: chain.includes("resolves") })) {
+				context.report({ node: value, messageId: "booleanSubject" })
+				return
+			}
+			for (let expression of templateExpressionsIn(value)) {
+				if (!isBoolean(expression)) continue
+				context.report({ node: expression, messageId: "booleanInTemplate" })
+			}
+		}
+
 		function checkMatcherChain(subject) {
 			let { chain, matcherCall } = collectChain(subject)
+			checkSubjectValue(subject, chain)
 			let matcher = chain.at(-1)
 			if (!matcherCall || !matcher) {
 				context.report({ node: subject, messageId: "missingMatcher" })
@@ -88,18 +113,6 @@ export default createRule({
 					data: { matcher },
 				})
 			}
-		}
-
-		function isInsideExpectSubject(node) {
-			let ancestors = context.sourceCode.getAncestors(node)
-			let child = node
-			for (let ancestor of ancestors.toReversed()) {
-				if (isExpectSubject(ancestor) && ancestor.arguments[0] === child) {
-					return true
-				}
-				child = ancestor
-			}
-			return false
 		}
 
 		return {
@@ -138,14 +151,9 @@ export default createRule({
 				}
 				if (isExpectSubject(node)) checkMatcherChain(node)
 			},
-			BinaryExpression(node) {
-				if (!COMPARISON_OPERATORS.has(node.operator)) return
-				if (!isInsideExpectSubject(node)) return
-				context.report({
-					node,
-					messageId: "comparisonInSubject",
-					data: { operator: node.operator },
-				})
+			ThrowStatement(node) {
+				if (!isTestCallback(enclosingFunction(node))) return
+				context.report({ node, messageId: "throwInTest" })
 			},
 		}
 	},
@@ -185,4 +193,66 @@ function isAssertCall(node) {
 		callee.object.type === "Identifier" &&
 		callee.object.name === "assert"
 	)
+}
+
+// boolean is the union true | false, so check every member.
+function isBooleanType(type) {
+	let members = type.isUnion() ? type.types : [type]
+	return members.every(member => member.flags & ts.TypeFlags.BooleanLike)
+}
+
+// Only literals spelled out in the subject: a template built elsewhere and
+// passed in is a string the author chose to snapshot.
+function templateExpressionsIn(node) {
+	switch (node.type) {
+		case "TemplateLiteral":
+			return node.expressions
+		case "ArrayExpression":
+			return node.elements.filter(Boolean).flatMap(templateExpressionsIn)
+		case "ObjectExpression":
+			return node.properties.flatMap(property =>
+				property.type === "Property"
+					? templateExpressionsIn(property.value)
+					: [],
+			)
+		case "SpreadElement":
+			return templateExpressionsIn(node.argument)
+		default:
+			return []
+	}
+}
+
+function enclosingFunction(node) {
+	let current = node.parent
+	while (current && !isFunction(current)) current = current.parent
+	return current
+}
+
+function isFunction(node) {
+	return (
+		node.type === "FunctionDeclaration" ||
+		node.type === "FunctionExpression" ||
+		node.type === "ArrowFunctionExpression"
+	)
+}
+
+// test("name", fn), it.only("name", fn), test.each(rows)("name", fn), beforeEach(fn)
+function isTestCallback(fn) {
+	let call = fn?.parent
+	if (call?.type !== "CallExpression" || !call.arguments.includes(fn)) {
+		return false
+	}
+	return TEST_FUNCTIONS.has(rootIdentifierName(call.callee))
+}
+
+function rootIdentifierName(node) {
+	let current = node
+	while (
+		current.type === "MemberExpression" ||
+		current.type === "CallExpression"
+	) {
+		current =
+			current.type === "MemberExpression" ? current.object : current.callee
+	}
+	return current.type === "Identifier" ? current.name : null
 }

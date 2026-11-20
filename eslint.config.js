@@ -209,9 +209,31 @@ export default [
 		rules: { ...tseslint.configs.recommended.rules, ...commonRules },
 	},
 	{
+		files: ["test-stubs/**/*.ts"],
+		languageOptions: {
+			parser: tsparser,
+			parserOptions: { ecmaVersion: "latest", sourceType: "module" },
+		},
+		plugins: { "@typescript-eslint": tseslint },
+		rules: commonRules,
+	},
+	{
 		// Unit tests are expect tests (docs/testing.md). The processor reports
-		// opt-outs of the rule that lack an `invariant:` reason.
-		files: ["src/**/*.{test,spec}.{ts,tsx}"],
+		// opt-outs of the rule that lack an `invariant:` reason. Type
+		// information is only loaded for these files, from the smaller test
+		// tsconfig, to keep linting fast. The tsconfig must include every file
+		// matched here.
+		files: [
+			"src/**/*.{test,spec}.{ts,tsx}",
+			"src/**/test-helpers.{ts,tsx}",
+			"test-stubs/**/*.ts",
+		],
+		languageOptions: {
+			parserOptions: {
+				project: "./tsconfig.vitest.json",
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
 		plugins: { architecture },
 		processor: "architecture/expect-tests",
 		rules: { "architecture/expect-tests-only": "error" },

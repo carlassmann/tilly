@@ -186,7 +186,12 @@ describe("registerNotificationSettingsWithServer", () => {
 			),
 		)
 
-		expect(result.isOk()).toMatchInlineSnapshot(`true`)
+		expect(result).toMatchInlineSnapshot(`
+			e {
+			  "status": "ok",
+			  "value": undefined,
+			}
+		`)
 	})
 })
 

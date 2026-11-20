@@ -54,9 +54,14 @@ describe("defineTool — server tool", () => {
 	test("output schema unions error branch with success", () => {
 		let tool = buildEcho()(stubWorker)
 		let schema = tool.outputSchema as unknown as z.ZodType
-		expect(schema.safeParse({ error: "nope" }).success).toMatchInlineSnapshot(
-			`true`,
-		)
+		expect(schema.safeParse({ error: "nope" })).toMatchInlineSnapshot(`
+			{
+			  "data": {
+			    "error": "nope",
+			  },
+			  "success": true,
+			}
+		`)
 	})
 })
 
@@ -78,9 +83,16 @@ describe("defineTool — client tool", () => {
 			cancellable: true,
 		})
 		let schema = clientTool.outputSchema as unknown as z.ZodType
-		expect(
-			schema.safeParse({ cancelled: true, reason: "user closed" }).success,
-		).toMatchInlineSnapshot(`true`)
+		expect(schema.safeParse({ cancelled: true, reason: "user closed" }))
+			.toMatchInlineSnapshot(`
+			{
+			  "data": {
+			    "cancelled": true,
+			    "reason": "user closed",
+			  },
+			  "success": true,
+			}
+		`)
 	})
 
 	test("non-cancellable rejects cancelled output", () => {
@@ -90,9 +102,10 @@ describe("defineTool — client tool", () => {
 			output: z.object({ ok: z.boolean() }),
 		})
 		let schema = clientTool.outputSchema as unknown as z.ZodType
-		expect(
-			schema.safeParse({ cancelled: true, reason: "x" }).success,
-		).toMatchInlineSnapshot(`false`)
+		let { error } = schema.safeParse({ cancelled: true, reason: "x" })
+		expect(error && z.prettifyError(error)).toMatchInlineSnapshot(
+			`"✖ Invalid input"`,
+		)
 	})
 })
 

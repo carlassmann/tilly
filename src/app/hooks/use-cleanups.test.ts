@@ -60,10 +60,13 @@ async function ensureInactiveLists(person: co.loaded<typeof Person>) {
 
 describe("isStale", () => {
 	test("is true only for dates older than 30 days", () => {
-		let table = [60, 31, 29, 0].map(
-			days => `${days} days ago -> ${isStale(daysAgo(days))}`,
-		)
-		expect([...table, `now -> ${isStale(new Date())}`]).toMatchInlineSnapshot(`
+		let table = [
+			...[60, 31, 29, 0].map(
+				days => `${days} days ago -> ${isStale(daysAgo(days))}`,
+			),
+			`now -> ${isStale(new Date())}`,
+		]
+		expect(table).toMatchInlineSnapshot(`
 			[
 			  "60 days ago -> true",
 			  "31 days ago -> true",

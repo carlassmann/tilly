@@ -2,7 +2,14 @@ import { Group, co } from "jazz-tools"
 import { createJazzTestAccount } from "jazz-tools/testing"
 import { Note, Person, Reminder, UserAccount } from "#shared/schema/user"
 
-export { createAccount, seedPerson, seedNote, seedReminder, redactNoise }
+export {
+	createAccount,
+	seedPerson,
+	seedNote,
+	seedReminder,
+	redactNoise,
+	requireLoaded,
+}
 
 async function createAccount(opts: { isCurrentActive?: boolean } = {}) {
 	return await createJazzTestAccount({
@@ -104,6 +111,15 @@ async function seedReminder(
 	)
 	loaded.reminders.$jazz.push(reminder)
 	return reminder
+}
+
+// A failed load is broken test setup, not an output worth snapshotting.
+function requireLoaded<T extends { $isLoaded: boolean }>(
+	value: T | null | undefined,
+	what: string,
+) {
+	if (!value?.$isLoaded) throw new Error(`${what} not loaded`)
+	return value as Exclude<T, { $isLoaded: false }>
 }
 
 // Expect tests snapshot whole outputs; ids and timestamps differ every run.

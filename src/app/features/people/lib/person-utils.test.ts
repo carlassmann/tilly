@@ -1,7 +1,11 @@
 import { expect, test } from "vitest"
 import { setActiveAccount } from "jazz-tools/testing"
 import { Person } from "#shared/schema/user"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	createAccount,
+	requireLoaded,
+	seedPerson,
+} from "#shared/tools/test-helpers"
 import { isPersonAdmin, getPersonOwnerName } from "./person-utils"
 
 test("isPersonAdmin", async () => {
@@ -15,9 +19,10 @@ test("isPersonAdmin", async () => {
 	})
 	await owner.$jazz.waitForAllCoValuesSync()
 	setActiveAccount(collaborator)
-	let loaded = await Person.load(shared.$jazz.id)
-	if (!loaded?.$isLoaded)
-		throw new Error("collaborator cannot load shared person")
+	let loaded = requireLoaded(
+		await Person.load(shared.$jazz.id),
+		"shared person",
+	)
 	table.push(`writer collaborator -> ${isPersonAdmin(loaded)}`)
 	expect(table).toMatchInlineSnapshot(`
 		[

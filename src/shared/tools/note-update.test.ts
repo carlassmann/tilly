@@ -81,9 +81,15 @@ describe("updateNote", () => {
 			noteId: note.$jazz.id,
 			pinned: true,
 		})
-		expect(
-			`pinned ${result.previous.pinned} -> ${result.current.pinned}`,
-		).toMatchInlineSnapshot(`"pinned false -> true"`)
+		expect({
+			previous: result.previous.pinned,
+			current: result.current.pinned,
+		}).toMatchInlineSnapshot(`
+			{
+			  "current": true,
+			  "previous": false,
+			}
+		`)
 	})
 
 	test("soft delete moves note from notes to inactiveNotes", async () => {

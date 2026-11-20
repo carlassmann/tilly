@@ -5,11 +5,16 @@ import plugin from "../../index.js"
 
 // Runs real ESLint so the tests prove that the processor's reports survive
 // the very directives they report.
+// The rule is type-aware, so code is linted as the typed fixture file.
+let fixtures = new URL("../fixtures/", import.meta.url).pathname
 let linter = new Linter({ configType: "flat" })
 let config = [
 	{
-		files: ["**/*.test.ts"],
-		languageOptions: { parser },
+		files: ["**/*.ts"],
+		languageOptions: {
+			parser,
+			parserOptions: { projectService: true, tsconfigRootDir: fixtures },
+		},
 		linterOptions: { reportUnusedDisableDirectives: "off" },
 		plugins: { architecture: plugin },
 		processor: "architecture/expect-tests",
@@ -19,7 +24,7 @@ let config = [
 
 function lint(code: string) {
 	return linter
-		.verify(code, config, "src/example.test.ts")
+		.verify(code, config, `${fixtures}file.ts`)
 		.map(({ line, message }) => `${line}: ${message}`)
 }
 

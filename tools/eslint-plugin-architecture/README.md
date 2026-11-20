@@ -142,6 +142,8 @@ bun test         # vitest
 
 ### `expect-tests-only`
 
-Unit tests are expect tests (see `docs/testing.md`). Every `expect(...)` chain must end in `toMatchInlineSnapshot`, `toThrow`, `toThrowError` or `toThrowErrorMatchingInlineSnapshot`, without `.not`. Also reports `assert` imports and calls, and comparisons inside the `expect(...)` subject.
+Unit tests are expect tests (see `docs/testing.md`). Every `expect(...)` chain must end in `toMatchInlineSnapshot`, `toThrow`, `toThrowError` or `toThrowErrorMatchingInlineSnapshot`, without `.not`. Also reports `assert` imports and calls, boolean-typed `expect(...)` subjects, booleans interpolated into template strings written in the subject (also inside object and array literals), and `throw` directly in `test`/`it` callbacks and hooks. `expectTypeOf` and `assertType` are allowed.
+
+The rule needs type information (`parserOptions.projectService`). Values typed `any` are not checked.
 
 Pair it with the `architecture/expect-tests` processor. The processor reports opt-outs of the rule that lack a `-- invariant: <why>` description, block or file-wide disables, and inline config of the rule. It runs after ESLint applied the directives, so a directive cannot suppress its reports.

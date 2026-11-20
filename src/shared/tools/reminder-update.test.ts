@@ -90,9 +90,12 @@ describe("updateReminder", () => {
 			done: true,
 		})
 		let { done, dueAtDate } = result.current
-		expect(`done=${done} · due ${dueAtDate}`).toMatchInlineSnapshot(
-			`"done=false · due 2099-01-08"`,
-		)
+		expect({ done, dueAtDate }).toMatchInlineSnapshot(`
+			{
+			  "done": false,
+			  "dueAtDate": "2099-01-08",
+			}
+		`)
 		expect(await reminderListsOf(person)).toMatchInlineSnapshot(`
 			{
 			  "active": [

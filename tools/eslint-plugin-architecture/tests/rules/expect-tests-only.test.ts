@@ -1,7 +1,19 @@
-import { ruleTester } from "../rule-tester.js"
+import { typedRuleTester } from "../rule-tester.js"
 import rule from "../../rules/expect-tests-only.js"
 
-ruleTester.run("expect-tests-only", rule, {
+// Declarations give the subjects real types; undeclared names are `any`.
+let declarations = `
+declare let done: boolean
+declare let flag: true
+declare let maybe: boolean | undefined
+declare let count: number
+declare let name: string
+declare let items: { id: string; done: boolean }[]
+declare function isAdmin(): boolean
+declare function check(): Promise<boolean>
+`
+
+typedRuleTester.run("expect-tests-only", rule, {
 	valid: [
 		`expect(summary).toMatchInlineSnapshot()`,
 		`expect(summary).toMatchInlineSnapshot(\`"Ada"\`)`,
@@ -23,6 +35,30 @@ ruleTester.run("expect-tests-only", rule, {
 		},
 		`import { describe, it, expect } from "vitest"`,
 		`expect(\`\${now} -> \${wasDeliveredToday(now)}\`).toMatchInlineSnapshot()`,
+		...[
+			`expect(items.filter(item => item.done === true)).toMatchInlineSnapshot()`,
+			`expect({ done, count }).toMatchInlineSnapshot()`,
+			`expect([done, name]).toMatchInlineSnapshot()`,
+			`expect(maybe).toMatchInlineSnapshot()`,
+			`expect(\`\${name}: \${count}\`).toMatchInlineSnapshot()`,
+			`let table = items.map(item => \`\${item.id} -> \${item.done}\`); expect(table).toMatchInlineSnapshot()`,
+			`expect(items.map(item => \`\${item.id} -> \${item.done}\`)).toMatchInlineSnapshot()`,
+			`await expect(check()).rejects.toThrow()`,
+		].map(code => ({ name: code, code: declarations + code })),
+		{
+			name: "any-typed subjects are not checked",
+			code: `declare let loose: any; expect(loose).toMatchInlineSnapshot(); expect(\`\${loose}\`).toMatchInlineSnapshot()`,
+		},
+		{
+			name: "compile-time type assertions",
+			code: `import { expectTypeOf, assertType } from "vitest"; expectTypeOf(1).toEqualTypeOf<number>(); assertType<number>(1)`,
+		},
+		...[
+			`function loaded<T>(value: T | null): T { if (!value) throw new Error("not loaded"); return value }`,
+			`test("x", () => { let fail = () => { throw new Error("kaboom") } })`,
+			`test("x", () => { function helper() { throw new Error("x") } })`,
+			`describe("x", () => { function helper() { throw new Error("x") } })`,
+		].map(code => ({ name: code, code })),
 	],
 	invalid: [
 		...[
@@ -69,26 +105,63 @@ ruleTester.run("expect-tests-only", rule, {
 			`import { should } from "chai"`,
 		].map(code => ({ code, errors: [{ messageId: "assertStyle" }] })),
 		...[
-			`expect(a === b).toMatchInlineSnapshot()`,
-			`expect(a !== b).toMatchInlineSnapshot()`,
-			`expect(a == b).toMatchInlineSnapshot()`,
-			`expect(a != b).toMatchInlineSnapshot()`,
-			`expect(a < b).toMatchInlineSnapshot()`,
-			`expect(a > b).toMatchInlineSnapshot()`,
-			`expect(a <= b).toMatchInlineSnapshot()`,
-			`expect(a >= b).toMatchInlineSnapshot()`,
-			`expect(\`\${a === b}\`).toMatchInlineSnapshot('"true"')`,
-			`expect({ same: a === b }).toMatchInlineSnapshot()`,
-			`expect(items.some(item => item.id === id)).toMatchInlineSnapshot()`,
-			`expect.soft(a === b).toMatchInlineSnapshot()`,
-		].map(code => ({ code, errors: [{ messageId: "comparisonInSubject" }] })),
+			`expect(done).toMatchInlineSnapshot()`,
+			`expect(flag).toMatchInlineSnapshot()`,
+			`expect(isAdmin()).toMatchInlineSnapshot()`,
+			`expect(count === 1).toMatchInlineSnapshot()`,
+			`expect(items.some(item => item.id === name)).toMatchInlineSnapshot()`,
+			`expect(!name).toMatchInlineSnapshot()`,
+			`expect.soft(done).toMatchInlineSnapshot()`,
+			`await expect(check()).resolves.toMatchInlineSnapshot()`,
+		].map(code => ({
+			name: code,
+			code: declarations + code,
+			errors: [{ messageId: "booleanSubject" }],
+		})),
+		...[
+			`expect(\`\${done}\`).toMatchInlineSnapshot('"true"')`,
+			`expect(\`admin: \${isAdmin()}\`).toMatchInlineSnapshot()`,
+			`expect(\`\${count === 1}\`).toMatchInlineSnapshot()`,
+			`expect({ same: \`\${done}\` }).toMatchInlineSnapshot()`,
+			`expect([name, \`\${done}\`]).toMatchInlineSnapshot()`,
+			`expect({ rows: [\`\${done}\`] }).toMatchInlineSnapshot()`,
+			`expect([...[\`\${done}\`]]).toMatchInlineSnapshot()`,
+		].map(code => ({
+			name: code,
+			code: declarations + code,
+			errors: [{ messageId: "booleanInTemplate" }],
+		})),
 		{
-			name: "every problem in one assertion is reported",
-			code: `expect(a === b).toBe(true)`,
+			name: "each boolean in a template is reported",
+			code:
+				declarations +
+				`expect(\`\${done} \${name} \${flag}\`).toMatchInlineSnapshot()`,
 			errors: [
-				{ messageId: "disallowedMatcher" },
-				{ messageId: "comparisonInSubject" },
+				{ messageId: "booleanInTemplate" },
+				{ messageId: "booleanInTemplate" },
 			],
 		},
+		{
+			name: "every problem in one assertion is reported",
+			code: declarations + `expect(count === 1).toBe(true)`,
+			errors: [
+				{ messageId: "disallowedMatcher" },
+				{ messageId: "booleanSubject" },
+			],
+		},
+		...[
+			`test("x", () => { throw new Error("x") })`,
+			`test("x", async () => { if (!value) throw new Error("x") })`,
+			`it("x", function () { throw new Error("x") })`,
+			`it.only("x", () => { throw new Error("x") })`,
+			`test.each([1])("x %s", () => { throw new Error("x") })`,
+			`test("x", () => { for (let item of items) { if (item) throw new Error("x") } })`,
+			`beforeEach(() => { throw new Error("x") })`,
+			`afterAll(async () => { throw new Error("x") })`,
+		].map(code => ({
+			name: code,
+			code,
+			errors: [{ messageId: "throwInTest" }],
+		})),
 	],
 })
