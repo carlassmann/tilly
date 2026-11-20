@@ -18,14 +18,17 @@ let config = [
 		linterOptions: { reportUnusedDisableDirectives: "off" },
 		plugins: { architecture: plugin },
 		processor: "architecture/expect-tests",
-		rules: { "architecture/expect-tests-only": "error" },
+		rules: {
+			"architecture/expect-tests-only": "error",
+			"architecture/expect-tests-no-booleans": "error",
+		},
 	},
 ] as Linter.Config[]
 
 function lint(code: string) {
 	return linter
 		.verify(code, config, `${fixtures}file.ts`)
-		.map(({ line, message }) => `${line}: ${message}`)
+		.map(({ line, ruleId, message }) => `${line}: ${ruleId}: ${message}`)
 }
 
 let invalid = {
@@ -55,6 +58,12 @@ expect(1).toBe(1)`,
 	"inline config with a quoted rule": `
 /* eslint "architecture/expect-tests-only": 0 */
 expect(1).toBe(1)`,
+	"boolean rule disabled without reason": `
+// eslint-disable-next-line architecture/expect-tests-no-booleans
+expect(1 === 1).toMatchInlineSnapshot()`,
+	"boolean rule disabled for a block": `
+/* eslint-disable architecture/expect-tests-no-booleans -- invariant: all */
+expect(1 === 1).toMatchInlineSnapshot()`,
 }
 
 describe("expect-tests processor", () => {
@@ -64,7 +73,7 @@ describe("expect-tests processor", () => {
 				problem.startsWith("2: "),
 			)
 			expect(directiveProblems.join("\n")).toContain(
-				"architecture/expect-tests-only",
+				"2: architecture/expect-tests-only: ",
 			)
 		})
 	}
@@ -83,6 +92,13 @@ expect(1).toBe(1)`)
 		expect(problems).toEqual([])
 	})
 
+	it("allows a boolean rule opt-out with an invariant reason", () => {
+		let problems = lint(`
+// eslint-disable-next-line architecture/expect-tests-no-booleans -- invariant: x
+expect(1 === 1).toMatchInlineSnapshot()`)
+		expect(problems).toEqual([])
+	})
+
 	it("ignores disables of other rules", () => {
 		let problems = lint(`
 // eslint-disable-next-line architecture/no-deep-feature-imports -- fixture
@@ -93,7 +109,7 @@ expect(value).toMatchInlineSnapshot()`)
 
 	it("reports the directive and nothing else for a file-wide disable", () => {
 		expect(lint(invalid["file-wide disable without rule list"])).toEqual([
-			"2: eslint-disable without a rule list also disables architecture/expect-tests-only. Name the rules to disable.",
+			"2: architecture/expect-tests-only: eslint-disable without a rule list also disables the expect-tests rules. Name the rules to disable.",
 		])
 	})
 })

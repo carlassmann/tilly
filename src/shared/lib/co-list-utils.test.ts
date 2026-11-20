@@ -111,8 +111,20 @@ describe("removeCoValueRefsByLoadingStates", () => {
 	})
 
 	test("is a no-op on non-list input", () => {
+		let plainArray: MockRef[] = [unloaded("deleted")]
+		let notAList = {}
 		removeCoValueRefsByLoadingStates(null, ["deleted"])
-		removeCoValueRefsByLoadingStates({}, ["deleted"])
+		removeCoValueRefsByLoadingStates(plainArray, ["deleted"])
+		removeCoValueRefsByLoadingStates(notAList, ["deleted"])
+		expect({
+			plainArray: summarizeRefs(plainArray),
+			notAList,
+		}).toMatchInlineSnapshot(`
+			{
+			  "notAList": {},
+			  "plainArray": "unloaded: deleted",
+			}
+		`)
 	})
 })
 

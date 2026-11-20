@@ -20,6 +20,23 @@ let featureRoots = [
 
 let architectureOptions = { featureRoots }
 
+let testFiles = [
+	"src/**/*.{test,spec}.{ts,tsx}",
+	"src/**/*.test-d.ts",
+	"src/**/test-helpers.{ts,tsx}",
+	"test-stubs/**/*.ts",
+]
+
+let testOnlyMessage =
+	"Only test files and test-helpers may use the test framework (docs/testing.md)."
+let testOnlyModules = ["vitest", "chai", "expect"].map(name => ({
+	name,
+	message: testOnlyMessage,
+}))
+let testOnlyGlobals = ["expect", "assert", "chai", "vi", "vitest"].map(
+	name => ({ name, message: testOnlyMessage }),
+)
+
 let commonRules = {
 	"@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
 	"@typescript-eslint/no-explicit-any": "error",
@@ -218,16 +235,34 @@ export default [
 		rules: commonRules,
 	},
 	{
-		// Unit tests are expect tests (docs/testing.md). The processor reports
-		// opt-outs of the rule that lack an `invariant:` reason. Type
-		// information is only loaded for these files, from the smaller test
-		// tsconfig, to keep linting fast. The tsconfig must include every file
-		// matched here.
-		files: [
-			"src/**/*.{test,spec}.{ts,tsx}",
-			"src/**/test-helpers.{ts,tsx}",
-			"test-stubs/**/*.ts",
-		],
+		// Unit tests are expect tests (docs/testing.md). The syntactic rule
+		// covers all of src, so a helper in an ordinary file cannot hide a
+		// hand-written assertion. The processor reports opt-outs of the rules
+		// that lack an `invariant:` reason.
+		files: ["src/**/*.{ts,tsx}", "test-stubs/**/*.ts"],
+		ignores: ["src/app/routeTree.gen.ts"],
+		plugins: { architecture },
+		processor: "architecture/expect-tests",
+		rules: { "architecture/expect-tests-only": "error" },
+	},
+	{
+		// Only test files and their helpers may use the test framework, so the
+		// type-aware rule below sees every expect(...).
+		files: ["src/**/*.{ts,tsx}"],
+		ignores: testFiles,
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{ paths: testOnlyModules, patterns: ["@vitest/*"] },
+			],
+			"no-restricted-globals": ["error", ...testOnlyGlobals],
+		},
+	},
+	{
+		// Type information is only loaded for these files, from the smaller
+		// test tsconfig, to keep linting fast. The tsconfig must include every
+		// file matched here.
+		files: testFiles,
 		languageOptions: {
 			parserOptions: {
 				project: "./tsconfig.vitest.json",
@@ -235,8 +270,7 @@ export default [
 			},
 		},
 		plugins: { architecture },
-		processor: "architecture/expect-tests",
-		rules: { "architecture/expect-tests-only": "error" },
+		rules: { "architecture/expect-tests-no-booleans": "error" },
 	},
 	{
 		ignores: [

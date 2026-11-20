@@ -9,6 +9,7 @@
 		"src/**/*.test.tsx",
 		"src/**/*.spec.ts",
 		"src/**/*.spec.tsx",
+		"src/**/*.test-d.ts",
 		"src/**/test-helpers.ts",
 		"src/**/test-helpers.tsx",
 		"test-stubs/**/*.ts"

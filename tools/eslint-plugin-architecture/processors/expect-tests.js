@@ -1,17 +1,22 @@
 import { parse } from "@typescript-eslint/parser"
 
-// Policing opt-outs of expect-tests-only inside the rule would not work: a
-// directive that disables the rule also suppresses the rule's report about
-// that directive. Processor postprocess runs after ESLint applied all
+// Policing opt-outs of the expect-tests rules inside the rules would not
+// work: a directive that disables a rule also suppresses the rule's report
+// about that directive. Processor postprocess runs after ESLint applied all
 // directives, so problems added here cannot be disabled inline.
 
 const RULE_ID = "architecture/expect-tests-only"
+const EXPECT_TESTS_RULES = new Set([
+	"expect-tests-only",
+	"expect-tests-no-booleans",
+])
+const RULES = "the expect-tests rules"
 const DOCS = "see docs/testing.md"
 const MESSAGES = {
-	missingInvariant: `Opting out of ${RULE_ID} needs a reason: \`-- invariant: <why>\` (${DOCS}).`,
-	blockDisable: `Block or file-wide eslint-disable of ${RULE_ID} is not allowed. Opt out single assertions with eslint-disable-next-line and \`-- invariant: <why>\` (${DOCS}).`,
-	unlimitedDisable: `eslint-disable without a rule list also disables ${RULE_ID}. Name the rules to disable.`,
-	inlineConfig: `Configuring ${RULE_ID} inline is not allowed (${DOCS}).`,
+	missingInvariant: `Opting out of ${RULES} needs a reason: \`-- invariant: <why>\` (${DOCS}).`,
+	blockDisable: `Block or file-wide eslint-disable of ${RULES} is not allowed. Opt out single assertions with eslint-disable-next-line and \`-- invariant: <why>\` (${DOCS}).`,
+	unlimitedDisable: `eslint-disable without a rule list also disables ${RULES}. Name the rules to disable.`,
+	inlineConfig: `Configuring ${RULES} inline is not allowed (${DOCS}).`,
 }
 
 let sourceTextByFilename = new Map()
@@ -33,6 +38,8 @@ export default {
 }
 
 function findOptOutViolations(text, filename) {
+	// Skips parsing the many files without any directive.
+	if (!text.includes("eslint")) return []
 	let comments = parseComments(text, filename)
 	return comments.flatMap(comment => {
 		let messageId = checkDirective(parseDirective(comment.value))
@@ -91,7 +98,7 @@ function checkDirective(directive) {
 }
 
 function isExpectTestsRule(ruleId) {
-	return ruleId === "expect-tests-only" || ruleId.endsWith("/expect-tests-only")
+	return EXPECT_TESTS_RULES.has(ruleId.split("/").at(-1))
 }
 
 function hasInvariantReason(description) {

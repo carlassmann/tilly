@@ -9,6 +9,7 @@ import onlyRoutesMayImportScreens from "./rules/only-routes-may-import-screens.j
 import onlyRouterMayImportHandlers from "./rules/only-router-may-import-handlers.js"
 import onlyHandlersMayImportOperations from "./rules/only-handlers-may-import-operations.js"
 import expectTestsOnly from "./rules/expect-tests-only.js"
+import expectTestsNoBooleans from "./rules/expect-tests-no-booleans.js"
 import expectTestsProcessor from "./processors/expect-tests.js"
 const plugin = {
 	meta: {
@@ -28,6 +29,7 @@ const plugin = {
 		"only-router-may-import-handlers": onlyRouterMayImportHandlers,
 		"only-handlers-may-import-operations": onlyHandlersMayImportOperations,
 		"expect-tests-only": expectTestsOnly,
+		"expect-tests-no-booleans": expectTestsNoBooleans,
 	},
 	processors: {
 		"expect-tests": expectTestsProcessor,
