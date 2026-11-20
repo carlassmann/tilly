@@ -10,9 +10,13 @@ export default defineConfig({
 		exclude: ["**/node_modules/**", "**/.reference/**"],
 		include: ["src/**/*.{test,spec}.{ts,tsx}"],
 		fileParallelism: false,
+		// A test without assertions passes no matter what the code does.
+		expect: { requireAssertions: true },
 		typecheck: {
 			enabled: true,
-			include: ["src/**/*.{test,spec}.{ts,tsx}"],
+			// *.test-d.ts holds type-only tests: typechecked, never run, so
+			// requireAssertions does not apply to them.
+			include: ["src/**/*.{test,spec}.{ts,tsx}", "src/**/*.test-d.ts"],
 			tsconfig: "./tsconfig.vitest.json",
 		},
 	},

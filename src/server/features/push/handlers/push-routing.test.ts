@@ -46,8 +46,9 @@ describe("push route composition", () => {
 			headers: { Authorization: `Bearer ${CRON_SECRET}` },
 		})
 
-		expect(res.status).toBe(200)
-		expect(await res.json()).toEqual({ message: "ok", results: [] })
+		expect(await describeResponse(res)).toMatchInlineSnapshot(
+			`"200 {"message":"ok","results":[]}"`,
+		)
 	})
 
 	test("cron delivery rejects a wrong bearer secret", async () => {
@@ -55,8 +56,10 @@ describe("push route composition", () => {
 			headers: { Authorization: "Bearer wrong-secret" },
 		})
 
-		expect(res.status).toBe(401)
-		expect(await res.text()).not.toContain("Authentication required")
+		// Not the Jazz auth middleware's "Authentication required" denial
+		expect(await describeResponse(res)).toMatchInlineSnapshot(
+			`"401 Unauthorized"`,
+		)
 	})
 
 	test("test notification still requires Jazz auth", async () => {
@@ -66,11 +69,9 @@ describe("push route composition", () => {
 			body: JSON.stringify({ endpoint: "https://example.com" }),
 		})
 
-		expect(res.status).toBe(401)
-		expect(await res.json()).toEqual({
-			error: "Authentication required",
-			code: "unauthorized",
-		})
+		expect(await describeResponse(res)).toMatchInlineSnapshot(
+			`"401 {"error":"Authentication required","code":"unauthorized"}"`,
+		)
 	})
 
 	test("register still requires Jazz auth", async () => {
@@ -80,10 +81,12 @@ describe("push route composition", () => {
 			body: JSON.stringify({ notificationSettingsId: "abc123" }),
 		})
 
-		expect(res.status).toBe(401)
-		expect(await res.json()).toEqual({
-			error: "Authentication required",
-			code: "unauthorized",
-		})
+		expect(await describeResponse(res)).toMatchInlineSnapshot(
+			`"401 {"error":"Authentication required","code":"unauthorized"}"`,
+		)
 	})
 })
+
+async function describeResponse(res: Response) {
+	return `${res.status} ${await res.text()}`
+}

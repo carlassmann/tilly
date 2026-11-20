@@ -12,106 +12,64 @@ import {
 	renameTagForRemainingPeople,
 } from "./list-operations"
 
-describe("normalizeHashtag", () => {
-	test("lowercases and strips non-alphanumeric characters", () => {
-		expect(normalizeHashtag("Hello World!")).toBe("#helloworld")
-	})
+test("hashtag summary transformations", () => {
+	let show = (value: string | undefined) => JSON.stringify(value) ?? "undefined"
+	let call = <A extends (string | undefined)[]>(
+		name: string,
+		fn: (...args: A) => string,
+		...args: A
+	) => `${name}(${args.map(show).join(", ")}) → ${show(fn(...args))}`
 
-	test("preserves underscores", () => {
-		expect(normalizeHashtag("my_tag")).toBe("#my_tag")
-	})
-
-	test("handles empty string", () => {
-		expect(normalizeHashtag("")).toBe("#")
-	})
-
-	test("strips special chars", () => {
-		expect(normalizeHashtag("café-résumé")).toBe("#cafrsum")
-	})
-})
-
-describe("removeHashtagFromSummary", () => {
-	test("removes tag from end of summary", () => {
-		expect(
-			removeHashtagFromSummary("friend from work #colleague", "#colleague"),
-		).toBe("friend from work")
-	})
-
-	test("removes tag from middle of summary", () => {
-		expect(removeHashtagFromSummary("a #foo b", "#foo")).toBe("a b")
-	})
-
-	test("removes tag when it is the only content", () => {
-		expect(removeHashtagFromSummary("#only", "#only")).toBe("")
-	})
-
-	test("returns empty string for undefined summary", () => {
-		expect(removeHashtagFromSummary(undefined, "#tag")).toBe("")
-	})
-
-	test("is case-insensitive", () => {
-		expect(removeHashtagFromSummary("hi #Friend", "#friend")).toBe("hi")
-	})
-
-	test("does not remove partial matches", () => {
-		expect(removeHashtagFromSummary("#friends forever", "#friend")).toBe(
-			"#friends forever",
-		)
-	})
-
-	test("collapses multiple spaces after removal", () => {
-		expect(removeHashtagFromSummary("a  #tag  b", "#tag")).toBe("a b")
-	})
-})
-
-describe("addHashtagToSummary", () => {
-	test("appends tag to existing summary", () => {
-		expect(addHashtagToSummary("old friend", "#colleague")).toBe(
-			"old friend #colleague",
-		)
-	})
-
-	test("returns just the tag for empty summary", () => {
-		expect(addHashtagToSummary("", "#new")).toBe("#new")
-	})
-
-	test("returns just the tag for undefined summary", () => {
-		expect(addHashtagToSummary(undefined, "#new")).toBe("#new")
-	})
-
-	test("trims whitespace before appending", () => {
-		expect(addHashtagToSummary("  padded  ", "#tag")).toBe("padded #tag")
-	})
-})
-
-describe("replaceHashtagInSummary", () => {
-	test("replaces old tag with new tag", () => {
-		expect(replaceHashtagInSummary("my #old friend", "#old", "#new")).toBe(
-			"my #new friend",
-		)
-	})
-
-	test("returns empty string for undefined summary", () => {
-		expect(replaceHashtagInSummary(undefined, "#old", "#new")).toBe("")
-	})
-
-	test("is case-insensitive", () => {
-		expect(replaceHashtagInSummary("hi #OLD pal", "#old", "#new")).toBe(
-			"hi #new pal",
-		)
-	})
-
-	test("only replaces whole-word matches", () => {
-		expect(replaceHashtagInSummary("#oldfriend #old", "#old", "#new")).toBe(
-			"#oldfriend #new",
-		)
-	})
-
-	test("replaces tag at end of string", () => {
-		expect(replaceHashtagInSummary("notes #old", "#old", "#new")).toBe(
-			"notes #new",
-		)
-	})
+	expect([
+		call("normalize", normalizeHashtag, "Hello World!"),
+		call("normalize", normalizeHashtag, "my_tag"),
+		call("normalize", normalizeHashtag, ""),
+		call("normalize", normalizeHashtag, "café-résumé"),
+		call(
+			"remove",
+			removeHashtagFromSummary,
+			"friend from work #colleague",
+			"#colleague",
+		),
+		call("remove", removeHashtagFromSummary, "a #foo b", "#foo"),
+		call("remove", removeHashtagFromSummary, "#only", "#only"),
+		call("remove", removeHashtagFromSummary, undefined, "#tag"),
+		call("remove", removeHashtagFromSummary, "hi #Friend", "#friend"),
+		call("remove", removeHashtagFromSummary, "#friends forever", "#friend"),
+		call("remove", removeHashtagFromSummary, "a  #tag  b", "#tag"),
+		call("add", addHashtagToSummary, "old friend", "#colleague"),
+		call("add", addHashtagToSummary, "", "#new"),
+		call("add", addHashtagToSummary, undefined, "#new"),
+		call("add", addHashtagToSummary, "  padded  ", "#tag"),
+		call("replace", replaceHashtagInSummary, "my #old friend", "#old", "#new"),
+		call("replace", replaceHashtagInSummary, undefined, "#old", "#new"),
+		call("replace", replaceHashtagInSummary, "hi #OLD pal", "#old", "#new"),
+		call("replace", replaceHashtagInSummary, "#oldfriend #old", "#old", "#new"),
+		call("replace", replaceHashtagInSummary, "notes #old", "#old", "#new"),
+	]).toMatchInlineSnapshot(`
+		[
+		  "normalize("Hello World!") → "#helloworld"",
+		  "normalize("my_tag") → "#my_tag"",
+		  "normalize("") → "#"",
+		  "normalize("café-résumé") → "#cafrsum"",
+		  "remove("friend from work #colleague", "#colleague") → "friend from work"",
+		  "remove("a #foo b", "#foo") → "a b"",
+		  "remove("#only", "#only") → """,
+		  "remove(undefined, "#tag") → """,
+		  "remove("hi #Friend", "#friend") → "hi"",
+		  "remove("#friends forever", "#friend") → "#friends forever"",
+		  "remove("a  #tag  b", "#tag") → "a b"",
+		  "add("old friend", "#colleague") → "old friend #colleague"",
+		  "add("", "#new") → "#new"",
+		  "add(undefined, "#new") → "#new"",
+		  "add("  padded  ", "#tag") → "padded #tag"",
+		  "replace("my #old friend", "#old", "#new") → "my #new friend"",
+		  "replace(undefined, "#old", "#new") → """,
+		  "replace("hi #OLD pal", "#old", "#new") → "hi #new pal"",
+		  "replace("#oldfriend #old", "#old", "#new") → "#oldfriend #new"",
+		  "replace("notes #old", "#old", "#new") → "notes #new"",
+		]
+	`)
 })
 
 describe("bulk tag operations", () => {
@@ -152,7 +110,7 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloaded = await bob.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloaded.summary).toBe("colleague")
+		expect(reloaded.summary).toMatchInlineSnapshot(`"colleague"`)
 	})
 
 	test("addTagToNewlySelectedPeople adds tag only to newly selected", async () => {
@@ -178,10 +136,10 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloadedAlice = await alice.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloadedAlice.summary).toBe("friend #new")
-
 		let reloadedBob = await bob.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloadedBob.summary).toBe("colleague #old")
+		expect(
+			`Alice: ${reloadedAlice.summary} | Bob: ${reloadedBob.summary}`,
+		).toMatchInlineSnapshot(`"Alice: friend #new | Bob: colleague #old"`)
 	})
 
 	test("renameTagForRemainingPeople renames tag for selected people", async () => {
@@ -205,6 +163,6 @@ describe("bulk tag operations", () => {
 		})
 
 		let reloaded = await alice.$jazz.ensureLoaded({ resolve: {} })
-		expect(reloaded.summary).toBe("friend #new")
+		expect(reloaded.summary).toMatchInlineSnapshot(`"friend #new"`)
 	})
 })

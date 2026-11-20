@@ -139,3 +139,19 @@ bun install
 bun run build    # tsc → dist/
 bun test         # vitest
 ```
+
+### `expect-tests-only`
+
+Unit tests are expect tests (see `docs/testing.md`). Every `expect(...)`, `expect.soft(...)` and `expect.poll(...)` chain must end in `toMatchInlineSnapshot`, `toThrow`, `toThrowError` or `toThrowErrorMatchingInlineSnapshot`, without `.not`. Inline snapshot text must be a static string; property matchers are reported. Also reports any other use of vitest's `expect` (aliases, `expect.call`, asymmetric matchers, the test context's `expect`, `expect.extend` and `expect.addSnapshotSerializer`, `expect.assertions` without a positive literal), assertion APIs (`assert`, `should`, `chai`, `createExpect`, `node:assert`, `@vitest/expect`) however they are reached, namespace, dynamic and re-exported `vitest`, and `throw` directly in `test`/`it` callbacks and hooks. `expectTypeOf` and `assertType` are allowed.
+
+Syntactic only, so it is cheap enough for every source file: a helper in an ordinary file cannot hide an assertion.
+
+### `expect-tests-no-booleans`
+
+Reports `expect` subjects that hide values behind booleans: boolean-typed subjects (also after `resolves` and from `expect.poll`), lists of booleans, booleans converted in the subject (`String(b)`, `Number(b)`, `JSON.stringify(b)`, `b.toString()`, `b ? "x" : "y"`, `+b`, `b + ""`), booleans interpolated into template strings written in the subject, and `new Boolean(...)`. Boolean fields in objects are allowed.
+
+Needs type information (`parserOptions.project` or `projectService`); scope it to test files to keep linting fast. Values typed `any` are not checked.
+
+### `expect-tests` processor
+
+Pair both rules with the `architecture/expect-tests` processor. It reports opt-outs of either rule that lack a `-- invariant: <why>` description, block or file-wide disables, disables without a rule list, and inline config of the rules. It runs after ESLint applied the directives, so a directive cannot suppress its reports.

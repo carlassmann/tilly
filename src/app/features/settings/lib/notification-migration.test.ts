@@ -5,101 +5,49 @@ import {
 } from "./notification-migration"
 
 describe("copyNotificationSettingsData", () => {
-	test("copies all settings fields", () => {
-		let mockSettings: NotificationSettingsInput = {
+	let device = (name: string, isEnabled: boolean) => ({
+		isEnabled,
+		deviceName: name,
+		endpoint: `https://push.example.com/${name}`,
+		keys: { p256dh: `key-${name}`, auth: `auth-${name}` },
+	})
+
+	test("copies all settings fields and every device", () => {
+		let settings: NotificationSettingsInput = {
 			version: 1,
 			timezone: "America/New_York",
 			notificationTime: "09:00",
 			lastDeliveredAt: new Date("2025-01-15T14:00:00Z"),
 			language: "de",
 			latestReminderDueDate: "2025-02-01",
-			pushDevices: [
-				{
-					isEnabled: true,
-					deviceName: "iPhone",
-					endpoint: "https://push.example.com/abc123",
-					keys: { p256dh: "key1", auth: "auth1" },
-				},
-			],
+			pushDevices: [device("iPhone", true), device("iPad", false)],
 		}
-
-		let result = copyNotificationSettingsData(mockSettings, undefined)
-
-		expect(result.timezone).toBe("America/New_York")
-		expect(result.notificationTime).toBe("09:00")
-		expect(result.lastDeliveredAt).toEqual(new Date("2025-01-15T14:00:00Z"))
-		expect(result.language).toBe("de")
-		expect(result.latestReminderDueDate).toBe("2025-02-01")
-		expect(result.pushDevices).toHaveLength(1)
-		expect(result.pushDevices[0].deviceName).toBe("iPhone")
+		// eslint-disable-next-line architecture/expect-tests-only -- invariant: migration must not lose any setting or device
+		expect(copyNotificationSettingsData(settings, undefined)).toEqual(settings)
 	})
 
-	test("uses rootLanguage when settings language is undefined", () => {
-		let mockSettings: NotificationSettingsInput = {
-			version: 1,
-			timezone: "UTC",
-			notificationTime: "12:00",
-			pushDevices: [],
-		}
-
-		let result = copyNotificationSettingsData(mockSettings, "de")
-
-		expect(result.language).toBe("de")
-	})
-
-	test("preserves settings language over rootLanguage", () => {
-		let mockSettings: NotificationSettingsInput = {
-			version: 1,
-			timezone: "UTC",
-			notificationTime: "12:00",
-			language: "en",
-			pushDevices: [],
-		}
-
-		let result = copyNotificationSettingsData(mockSettings, "de")
-
-		expect(result.language).toBe("en")
-	})
-
-	test("copies multiple devices", () => {
-		let mockSettings: NotificationSettingsInput = {
-			version: 1,
-			timezone: "UTC",
-			pushDevices: [
-				{
-					isEnabled: true,
-					deviceName: "Device 1",
-					endpoint: "https://push.example.com/1",
-					keys: { p256dh: "key1", auth: "auth1" },
-				},
-				{
-					isEnabled: false,
-					deviceName: "Device 2",
-					endpoint: "https://push.example.com/2",
-					keys: { p256dh: "key2", auth: "auth2" },
-				},
-			],
-		}
-
-		let result = copyNotificationSettingsData(mockSettings, undefined)
-
-		expect(result.pushDevices).toHaveLength(2)
-		expect(result.pushDevices[0].isEnabled).toBe(true)
-		expect(result.pushDevices[1].isEnabled).toBe(false)
+	test("falls back to rootLanguage only when settings have no language", () => {
+		let base: NotificationSettingsInput = { version: 1, pushDevices: [] }
+		let withEnglish = { ...base, language: "en" as const }
+		let fallback = copyNotificationSettingsData(base, "de").language
+		let kept = copyNotificationSettingsData(withEnglish, "de").language
+		expect(`no language -> ${fallback}, en -> ${kept}`).toMatchInlineSnapshot(
+			`"no language -> de, en -> en"`,
+		)
 	})
 
 	test("handles undefined optional fields", () => {
-		let mockSettings: NotificationSettingsInput = {
-			version: 1,
-			pushDevices: [],
-		}
-
-		let result = copyNotificationSettingsData(mockSettings, undefined)
-
-		expect(result.timezone).toBeUndefined()
-		expect(result.notificationTime).toBeUndefined()
-		expect(result.lastDeliveredAt).toBeUndefined()
-		expect(result.language).toBeUndefined()
-		expect(result.latestReminderDueDate).toBeUndefined()
+		let result = copyNotificationSettingsData({ pushDevices: [] }, undefined)
+		expect(result).toMatchInlineSnapshot(`
+			{
+			  "language": undefined,
+			  "lastDeliveredAt": undefined,
+			  "latestReminderDueDate": undefined,
+			  "notificationTime": undefined,
+			  "pushDevices": [],
+			  "timezone": undefined,
+			  "version": 1,
+			}
+		`)
 	})
 })

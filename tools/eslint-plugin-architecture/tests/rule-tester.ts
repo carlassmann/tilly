@@ -16,3 +16,15 @@ export const ruleTester = new RuleTester({
 		},
 	},
 })
+
+// Type-aware rules lint test code as tests/fixtures/file.ts, typed by the
+// fixture tsconfig.
+export const typedRuleTester = new RuleTester({
+	languageOptions: {
+		parser: (await import("@typescript-eslint/parser")) as never,
+		parserOptions: {
+			projectService: true,
+			tsconfigRootDir: new URL("./fixtures", import.meta.url).pathname,
+		},
+	},
+})

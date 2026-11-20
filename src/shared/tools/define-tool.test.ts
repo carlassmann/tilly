@@ -21,13 +21,17 @@ describe("defineTool — server tool", () => {
 
 	test("returns a worker-bound factory with execute", () => {
 		let tool = buildEcho()(stubWorker)
-		expect(typeof tool.execute).toBe("function")
+		expect(typeof tool.execute).toMatchInlineSnapshot(`"function"`)
 	})
 
 	test("execute passes success through", async () => {
 		let tool = buildEcho()(stubWorker)
 		let out = await tool.execute!({ value: "hi" }, fakeOptions())
-		expect(out).toEqual({ echoed: "hi" })
+		expect(out).toMatchInlineSnapshot(`
+			{
+			  "echoed": "hi",
+			}
+		`)
 	})
 
 	test("execute wraps thrown errors as { error }", async () => {
@@ -40,13 +44,24 @@ describe("defineTool — server tool", () => {
 			},
 		})(stubWorker)
 		let out = await tool.execute!({}, fakeOptions())
-		expect(out).toEqual({ error: "kaboom" })
+		expect(out).toMatchInlineSnapshot(`
+			{
+			  "error": "kaboom",
+			}
+		`)
 	})
 
 	test("output schema unions error branch with success", () => {
 		let tool = buildEcho()(stubWorker)
 		let schema = tool.outputSchema as unknown as z.ZodType
-		expect(schema.safeParse({ error: "nope" }).success).toBe(true)
+		expect(schema.safeParse({ error: "nope" })).toMatchInlineSnapshot(`
+			{
+			  "data": {
+			    "error": "nope",
+			  },
+			  "success": true,
+			}
+		`)
 	})
 })
 
@@ -57,7 +72,7 @@ describe("defineTool — client tool", () => {
 			input: z.object({ q: z.string() }),
 			output: z.object({ a: z.string() }),
 		})
-		expect(clientTool.execute).toBeUndefined()
+		expect(clientTool.execute).toMatchInlineSnapshot(`undefined`)
 	})
 
 	test("cancellable adds the cancelled branch", () => {
@@ -68,9 +83,16 @@ describe("defineTool — client tool", () => {
 			cancellable: true,
 		})
 		let schema = clientTool.outputSchema as unknown as z.ZodType
-		expect(
-			schema.safeParse({ cancelled: true, reason: "user closed" }).success,
-		).toBe(true)
+		expect(schema.safeParse({ cancelled: true, reason: "user closed" }))
+			.toMatchInlineSnapshot(`
+			{
+			  "data": {
+			    "cancelled": true,
+			    "reason": "user closed",
+			  },
+			  "success": true,
+			}
+		`)
 	})
 
 	test("non-cancellable rejects cancelled output", () => {
@@ -80,8 +102,9 @@ describe("defineTool — client tool", () => {
 			output: z.object({ ok: z.boolean() }),
 		})
 		let schema = clientTool.outputSchema as unknown as z.ZodType
-		expect(schema.safeParse({ cancelled: true, reason: "x" }).success).toBe(
-			false,
+		let { error } = schema.safeParse({ cancelled: true, reason: "x" })
+		expect(error && z.prettifyError(error)).toMatchInlineSnapshot(
+			`"✖ Invalid input"`,
 		)
 	})
 })
@@ -89,52 +112,32 @@ describe("defineTool — client tool", () => {
 describe("operationSchema / deletedSchema", () => {
 	let current = z.object({ id: z.string(), name: z.string() })
 
-	test("operationSchema accepts create with current", () => {
-		let parsed = operationSchema(current).safeParse({
-			operation: "create",
-			current: { id: "1", name: "Ada" },
-		})
-		expect(parsed.success).toBe(true)
-	})
-
-	test("operationSchema accepts update with current + previous", () => {
-		let parsed = operationSchema(current).safeParse({
-			operation: "update",
-			current: { id: "1", name: "Ada" },
-			previous: { id: "1", name: "Adelaide" },
-		})
-		expect(parsed.success).toBe(true)
-	})
-
-	test("deletedSchema accepts delete with previous only", () => {
-		let parsed = deletedSchema(current).safeParse({
-			operation: "delete",
-			previous: { id: "1", name: "Ada" },
-		})
-		expect(parsed.success).toBe(true)
-	})
-
-	test("mutationSchema accepts all three operations", () => {
-		let schema = mutationSchema(current)
-		expect(
-			schema.safeParse({
-				operation: "create",
-				current: { id: "1", name: "x" },
-			}).success,
-		).toBe(true)
-		expect(
-			schema.safeParse({
-				operation: "update",
-				current: { id: "1", name: "x" },
-				previous: { id: "1", name: "y" },
-			}).success,
-		).toBe(true)
-		expect(
-			schema.safeParse({
-				operation: "delete",
-				previous: { id: "1", name: "x" },
-			}).success,
-		).toBe(true)
+	test("accept each operation shape", () => {
+		let create = { operation: "create", current: { id: "1", name: "Ada" } }
+		let update = { ...create, operation: "update", previous: create.current }
+		let deleted = { operation: "delete", previous: create.current }
+		let cases: [string, z.ZodType, unknown][] = [
+			["operationSchema create", operationSchema(current), create],
+			["operationSchema update", operationSchema(current), update],
+			["deletedSchema delete", deletedSchema(current), deleted],
+			["mutationSchema create", mutationSchema(current), create],
+			["mutationSchema update", mutationSchema(current), update],
+			["mutationSchema delete", mutationSchema(current), deleted],
+		]
+		let table = cases.map(
+			([label, schema, value]) =>
+				`${label} -> ${schema.safeParse(value).success}`,
+		)
+		expect(table).toMatchInlineSnapshot(`
+			[
+			  "operationSchema create -> true",
+			  "operationSchema update -> true",
+			  "deletedSchema delete -> true",
+			  "mutationSchema create -> true",
+			  "mutationSchema update -> true",
+			  "mutationSchema delete -> true",
+			]
+		`)
 	})
 })
 
@@ -142,6 +145,6 @@ function fakeOptions() {
 	return {
 		toolCallId: "test",
 		messages: [],
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- tests only need the fields execute reads
 	} as any
 }

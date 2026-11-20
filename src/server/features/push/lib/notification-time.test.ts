@@ -1,151 +1,82 @@
-import { describe, test, expect } from "vitest"
+import { expect, test } from "vitest"
 import {
 	isPastNotificationTime,
 	wasDeliveredToday,
 	type NotificationTimeSettings,
 } from "./notification-time"
 
-describe("isPastNotificationTime", () => {
-	test("returns true when current time is past notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(isPastNotificationTime(settings, currentUtc)).toBe(true)
-	})
+let utc9: NotificationTimeSettings = {
+	timezone: "UTC",
+	notificationTime: "09:00",
+}
+let ny9: NotificationTimeSettings = {
+	timezone: "America/New_York",
+	notificationTime: "09:00",
+}
+let utcDefault: NotificationTimeSettings = { timezone: "UTC" }
 
-	test("returns false when current time is before notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-		}
-		let currentUtc = new Date("2025-01-15T08:00:00Z")
-		expect(isPastNotificationTime(settings, currentUtc)).toBe(false)
-	})
-
-	test("returns true when current time equals notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-		}
-		let currentUtc = new Date("2025-01-15T09:00:00Z")
-		expect(isPastNotificationTime(settings, currentUtc)).toBe(true)
-	})
-
-	test("handles timezone conversion correctly", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "America/New_York", // UTC-5
-			notificationTime: "09:00",
-		}
-		// 14:00 UTC = 09:00 EST
-		let currentUtc = new Date("2025-01-15T14:00:00Z")
-		expect(isPastNotificationTime(settings, currentUtc)).toBe(true)
-
-		// 13:00 UTC = 08:00 EST
-		let beforeUtc = new Date("2025-01-15T13:00:00Z")
-		expect(isPastNotificationTime(settings, beforeUtc)).toBe(false)
-	})
-
-	test("defaults to 12:00 when notificationTime not set", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-		}
-		let atNoon = new Date("2025-01-15T12:00:00Z")
-		expect(isPastNotificationTime(settings, atNoon)).toBe(true)
-
-		let beforeNoon = new Date("2025-01-15T11:59:00Z")
-		expect(isPastNotificationTime(settings, beforeNoon)).toBe(false)
-	})
+test("isPastNotificationTime", () => {
+	let cases: [NotificationTimeSettings, string][] = [
+		[utc9, "2025-01-15T08:00:00Z"],
+		[utc9, "2025-01-15T09:00:00Z"],
+		[utc9, "2025-01-15T10:00:00Z"],
+		[ny9, "2025-01-15T13:00:00Z"],
+		[ny9, "2025-01-15T14:00:00Z"],
+		[utcDefault, "2025-01-15T11:59:00Z"],
+		[utcDefault, "2025-01-15T12:00:00Z"],
+	]
+	let table = cases.map(
+		([settings, now]) =>
+			`${describeSettings(settings)} | now ${now} -> ${isPastNotificationTime(settings, new Date(now))}`,
+	)
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "UTC 09:00 | now 2025-01-15T08:00:00Z -> false",
+		  "UTC 09:00 | now 2025-01-15T09:00:00Z -> true",
+		  "UTC 09:00 | now 2025-01-15T10:00:00Z -> true",
+		  "America/New_York 09:00 | now 2025-01-15T13:00:00Z -> false",
+		  "America/New_York 09:00 | now 2025-01-15T14:00:00Z -> true",
+		  "UTC (default) | now 2025-01-15T11:59:00Z -> false",
+		  "UTC (default) | now 2025-01-15T12:00:00Z -> true",
+		]
+	`)
 })
 
-describe("wasDeliveredToday", () => {
-	test("returns false when never delivered", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
+test("wasDeliveredToday", () => {
+	let cases: [NotificationTimeSettings, string | undefined, string][] = [
+		[utc9, undefined, "2025-01-15T10:00:00Z"],
+		[utc9, "2025-01-14T09:00:00Z", "2025-01-15T10:00:00Z"],
+		[utc9, "2025-01-15T09:30:00Z", "2025-01-15T10:00:00Z"],
+		[utc9, "2025-01-15T09:00:00Z", "2025-01-15T10:00:00Z"],
+		[utc9, "2025-01-15T08:00:00Z", "2025-01-15T10:00:00Z"],
+		[utc9, "2025-01-14T09:00:00Z", "2025-01-15T09:00:00Z"],
+		[utc9, "2025-01-15T09:00:00Z", "2025-01-15T18:00:00Z"],
+		[ny9, "2025-01-15T14:30:00Z", "2025-01-15T15:00:00Z"],
+		[ny9, "2025-01-15T03:00:00Z", "2025-01-15T15:00:00Z"],
+	]
+	let table = cases.map(([settings, delivered, now]) => {
+		let withDelivery = {
+			...settings,
+			lastDeliveredAt: delivered ? new Date(delivered) : undefined,
 		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(false)
+		let result = wasDeliveredToday(withDelivery, new Date(now))
+		return `${describeSettings(settings)} | delivered ${delivered ?? "never"} | now ${now} -> ${result}`
 	})
-
-	test("returns false when last delivered yesterday", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-14T09:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(false)
-	})
-
-	test("returns true when delivered today after notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T09:30:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(true)
-	})
-
-	test("returns true when delivered exactly at notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T09:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(true)
-	})
-
-	test("returns false when delivered today but before notification time", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T08:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T10:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(false)
-	})
-
-	test("handles timezone correctly - delivered in user's today", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "America/New_York",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T14:30:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T15:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(true)
-	})
-
-	test("handles timezone correctly - different calendar days UTC vs local", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "America/New_York",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T03:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T15:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(false)
-	})
-
-	test("allows re-delivery after midnight in user timezone", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-14T09:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T09:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(false)
-	})
-
-	test("prevents duplicate delivery within same notification window", () => {
-		let settings: NotificationTimeSettings = {
-			timezone: "UTC",
-			notificationTime: "09:00",
-			lastDeliveredAt: new Date("2025-01-15T09:00:00Z"),
-		}
-		let currentUtc = new Date("2025-01-15T18:00:00Z")
-		expect(wasDeliveredToday(settings, currentUtc)).toBe(true)
-	})
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "UTC 09:00 | delivered never | now 2025-01-15T10:00:00Z -> false",
+		  "UTC 09:00 | delivered 2025-01-14T09:00:00Z | now 2025-01-15T10:00:00Z -> false",
+		  "UTC 09:00 | delivered 2025-01-15T09:30:00Z | now 2025-01-15T10:00:00Z -> true",
+		  "UTC 09:00 | delivered 2025-01-15T09:00:00Z | now 2025-01-15T10:00:00Z -> true",
+		  "UTC 09:00 | delivered 2025-01-15T08:00:00Z | now 2025-01-15T10:00:00Z -> false",
+		  "UTC 09:00 | delivered 2025-01-14T09:00:00Z | now 2025-01-15T09:00:00Z -> false",
+		  "UTC 09:00 | delivered 2025-01-15T09:00:00Z | now 2025-01-15T18:00:00Z -> true",
+		  "America/New_York 09:00 | delivered 2025-01-15T14:30:00Z | now 2025-01-15T15:00:00Z -> true",
+		  "America/New_York 09:00 | delivered 2025-01-15T03:00:00Z | now 2025-01-15T15:00:00Z -> false",
+		]
+	`)
 })
+
+function describeSettings(settings: NotificationTimeSettings) {
+	return `${settings.timezone} ${settings.notificationTime ?? "(default)"}`
+}

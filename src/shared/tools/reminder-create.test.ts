@@ -3,7 +3,20 @@ import { setActiveAccount } from "jazz-tools/testing"
 import type { co } from "jazz-tools"
 import { Reminder, UserAccount } from "#shared/schema/user"
 import { createReminder } from "#shared/tools/reminder-create"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	redactNoise,
+	createAccount,
+	seedPerson,
+	requireLoaded,
+} from "#shared/tools/test-helpers"
+
+function createdAndStored(
+	createdId: string,
+	reminders: { $jazz: { id: string }; text: string }[],
+) {
+	let stored = reminders.map(r => ({ id: r.$jazz.id, text: r.text }))
+	return redactNoise({ created: createdId, stored })
+}
 
 describe("createReminder", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -20,18 +33,36 @@ describe("createReminder", () => {
 			text: "call back",
 			dueAtDate: "2099-01-01",
 		})
-
-		expect(result.operation).toBe("create")
-		expect(result.current.text).toBe("call back")
-		expect(result.current.dueAtDate).toBe("2099-01-01")
-		expect(result.current.done).toBe(false)
+		expect(redactNoise(result)).toMatchInlineSnapshot(`
+			{
+			  "current": {
+			    "createdAt": "<time>",
+			    "done": false,
+			    "dueAtDate": "2099-01-01",
+			    "personId": "<id:2>",
+			    "reminderId": "<id:1>",
+			    "text": "call back",
+			    "updatedAt": "<time>",
+			  },
+			  "operation": "create",
+			}
+		`)
 
 		let loaded = await person.$jazz.ensureLoaded({
 			resolve: { reminders: { $each: true } },
 		})
-		expect(
-			loaded.reminders.some(r => r?.$jazz.id === result.current.reminderId),
-		).toBe(true)
+		expect(createdAndStored(result.current.reminderId, [...loaded.reminders]))
+			.toMatchInlineSnapshot(`
+			{
+			  "created": "<id:1>",
+			  "stored": [
+			    {
+			      "id": "<id:1>",
+			      "text": "call back",
+			    },
+			  ],
+			}
+		`)
 	})
 
 	test("persists repeat config", async () => {
@@ -44,11 +75,12 @@ describe("createReminder", () => {
 			repeat: { interval: 1, unit: "week" },
 		})
 
-		let reloaded = await Reminder.load(result.current.reminderId)
-		expect(reloaded?.$isLoaded).toBe(true)
-		if (!reloaded?.$isLoaded) return
-		expect(reloaded.repeat?.interval).toBe(1)
-		expect(reloaded.repeat?.unit).toBe("week")
+		let reloaded = requireLoaded(
+			await Reminder.load(result.current.reminderId),
+			"reminder",
+		)
+		let { interval, unit } = reloaded.repeat ?? {}
+		expect(`every ${interval} ${unit}`).toMatchInlineSnapshot(`"every 1 week"`)
 	})
 
 	test("throws when person not found", async () => {
@@ -58,7 +90,7 @@ describe("createReminder", () => {
 				text: "x",
 				dueAtDate: "2099-01-01",
 			}),
-		).rejects.toBeDefined()
+		).rejects.toThrow("person not found")
 	})
 
 	describe("multi-user", () => {
@@ -82,9 +114,18 @@ describe("createReminder", () => {
 			let loaded = await person.$jazz.ensureLoaded({
 				resolve: { reminders: { $each: true } },
 			})
-			expect(
-				loaded.reminders.some(r => r?.$jazz.id === result.current.reminderId),
-			).toBe(true)
+			expect(createdAndStored(result.current.reminderId, [...loaded.reminders]))
+				.toMatchInlineSnapshot(`
+				{
+				  "created": "<id:1>",
+				  "stored": [
+				    {
+				      "id": "<id:1>",
+				      "text": "from other",
+				    },
+				  ],
+				}
+			`)
 		})
 	})
 })

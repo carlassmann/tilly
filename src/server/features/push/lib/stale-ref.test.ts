@@ -1,45 +1,30 @@
-import { describe, test, expect } from "vitest"
+import { test, expect } from "vitest"
 import { isStaleRef } from "./stale-ref"
 
-describe("isStaleRef", () => {
+test("isStaleRef keeps refs synced within 30 days or with a reminder due today or later", () => {
 	let now = new Date("2025-01-15T12:00:00Z")
-
-	test("returns false when synced yesterday", () => {
-		let lastSyncedAt = new Date("2025-01-14T12:00:00Z")
-		expect(isStaleRef(lastSyncedAt, undefined, now)).toBe(false)
+	let cases: [lastSyncedAt: string, latestReminder: string | undefined][] = [
+		["2025-01-14", undefined],
+		["2024-12-17", undefined],
+		["2024-12-15", undefined],
+		["2024-12-15", "2025-01-10"],
+		["2024-12-15", "2025-01-20"],
+		["2024-12-15", "2025-01-15"],
+		["2024-11-01", "2024-12-01"],
+	]
+	let table = cases.map(([syncedOn, reminder]) => {
+		let stale = isStaleRef(new Date(`${syncedOn}T12:00:00Z`), reminder, now)
+		return `synced ${syncedOn}, reminder ${reminder ?? "none"} → ${stale ? "stale" : "keep"}`
 	})
-
-	test("returns false when synced 29 days ago", () => {
-		let lastSyncedAt = new Date("2024-12-17T12:00:00Z")
-		expect(isStaleRef(lastSyncedAt, undefined, now)).toBe(false)
-	})
-
-	test("returns true when synced 31 days ago with no reminders", () => {
-		let lastSyncedAt = new Date("2024-12-15T12:00:00Z")
-		expect(isStaleRef(lastSyncedAt, undefined, now)).toBe(true)
-	})
-
-	test("returns true when synced 31 days ago with past reminder", () => {
-		let lastSyncedAt = new Date("2024-12-15T12:00:00Z")
-		let pastReminder = "2025-01-10"
-		expect(isStaleRef(lastSyncedAt, pastReminder, now)).toBe(true)
-	})
-
-	test("returns false when synced 31 days ago but has future reminder", () => {
-		let lastSyncedAt = new Date("2024-12-15T12:00:00Z")
-		let futureReminder = "2025-01-20"
-		expect(isStaleRef(lastSyncedAt, futureReminder, now)).toBe(false)
-	})
-
-	test("returns false when synced 31 days ago but has reminder today", () => {
-		let lastSyncedAt = new Date("2024-12-15T12:00:00Z")
-		let todayReminder = "2025-01-15"
-		expect(isStaleRef(lastSyncedAt, todayReminder, now)).toBe(false)
-	})
-
-	test("returns true when both sync and reminder are old", () => {
-		let lastSyncedAt = new Date("2024-11-01T12:00:00Z")
-		let oldReminder = "2024-12-01"
-		expect(isStaleRef(lastSyncedAt, oldReminder, now)).toBe(true)
-	})
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "synced 2025-01-14, reminder none → keep",
+		  "synced 2024-12-17, reminder none → keep",
+		  "synced 2024-12-15, reminder none → stale",
+		  "synced 2024-12-15, reminder 2025-01-10 → stale",
+		  "synced 2024-12-15, reminder 2025-01-20 → keep",
+		  "synced 2024-12-15, reminder 2025-01-15 → keep",
+		  "synced 2024-11-01, reminder 2024-12-01 → stale",
+		]
+	`)
 })

@@ -1,62 +1,48 @@
-import { describe, test, expect } from "vitest"
+import { test, expect } from "vitest"
 import { findLatestFutureDate } from "./reminder-utils"
 
-describe("findLatestFutureDate", () => {
+test("findLatestFutureDate returns the latest open reminder due today or later", () => {
 	let today = "2025-01-15"
-
-	test("returns undefined for empty list", () => {
-		expect(findLatestFutureDate([], today)).toBeUndefined()
+	let reminder = (dueAtDate: string, flag?: "deleted" | "done") => ({
+		dueAtDate,
+		deleted: flag === "deleted",
+		done: flag === "done",
 	})
-
-	test("returns undefined when all reminders are in the past", () => {
-		let reminders = [
-			{ dueAtDate: "2025-01-10", deleted: false, done: false },
-			{ dueAtDate: "2025-01-14", deleted: false, done: false },
+	let cases = {
+		"empty list": [],
+		"all in the past": [reminder("2025-01-10"), reminder("2025-01-14")],
+		"only future": [reminder("2025-01-20")],
+		"due today": [reminder("2025-01-15")],
+		"multiple future": [
+			reminder("2025-01-20"),
+			reminder("2025-02-15"),
+			reminder("2025-01-25"),
+		],
+		"later one deleted": [
+			reminder("2025-02-15", "deleted"),
+			reminder("2025-01-20"),
+		],
+		"later one done": [reminder("2025-02-15", "done"), reminder("2025-01-20")],
+		"all future deleted or done": [
+			reminder("2025-02-15", "deleted"),
+			reminder("2025-01-20", "done"),
+			reminder("2025-01-10"),
+		],
+	}
+	let table = Object.entries(cases).map(
+		([label, reminders]) =>
+			`${label} → ${findLatestFutureDate(reminders, today) ?? "undefined"}`,
+	)
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "empty list → undefined",
+		  "all in the past → undefined",
+		  "only future → 2025-01-20",
+		  "due today → 2025-01-15",
+		  "multiple future → 2025-02-15",
+		  "later one deleted → 2025-01-20",
+		  "later one done → 2025-01-20",
+		  "all future deleted or done → undefined",
 		]
-		expect(findLatestFutureDate(reminders, today)).toBeUndefined()
-	})
-
-	test("returns the only future reminder", () => {
-		let reminders = [{ dueAtDate: "2025-01-20", deleted: false, done: false }]
-		expect(findLatestFutureDate(reminders, today)).toBe("2025-01-20")
-	})
-
-	test("returns today's date as valid future", () => {
-		let reminders = [{ dueAtDate: "2025-01-15", deleted: false, done: false }]
-		expect(findLatestFutureDate(reminders, today)).toBe("2025-01-15")
-	})
-
-	test("returns the latest of multiple future reminders", () => {
-		let reminders = [
-			{ dueAtDate: "2025-01-20", deleted: false, done: false },
-			{ dueAtDate: "2025-02-15", deleted: false, done: false },
-			{ dueAtDate: "2025-01-25", deleted: false, done: false },
-		]
-		expect(findLatestFutureDate(reminders, today)).toBe("2025-02-15")
-	})
-
-	test("ignores deleted reminders", () => {
-		let reminders = [
-			{ dueAtDate: "2025-02-15", deleted: true, done: false },
-			{ dueAtDate: "2025-01-20", deleted: false, done: false },
-		]
-		expect(findLatestFutureDate(reminders, today)).toBe("2025-01-20")
-	})
-
-	test("ignores done reminders", () => {
-		let reminders = [
-			{ dueAtDate: "2025-02-15", deleted: false, done: true },
-			{ dueAtDate: "2025-01-20", deleted: false, done: false },
-		]
-		expect(findLatestFutureDate(reminders, today)).toBe("2025-01-20")
-	})
-
-	test("returns undefined when all future reminders are deleted or done", () => {
-		let reminders = [
-			{ dueAtDate: "2025-02-15", deleted: true, done: false },
-			{ dueAtDate: "2025-01-20", deleted: false, done: true },
-			{ dueAtDate: "2025-01-10", deleted: false, done: false },
-		]
-		expect(findLatestFutureDate(reminders, today)).toBeUndefined()
-	})
+	`)
 })

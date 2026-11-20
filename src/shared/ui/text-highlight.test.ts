@@ -1,85 +1,43 @@
-import { describe, test, expect } from "vitest"
+import { expect, test } from "vitest"
+import { extractSearchTerms } from "#shared/lib/search-terms"
 
-function extractSearchTerms(query: string): string[] {
-	let trimmed = query.trim()
-	let terms: string[] = []
-	let hashtagMatch = trimmed.match(/^(#[a-zA-Z0-9_]+)\s*/)
-	if (hashtagMatch) {
-		terms.push(hashtagMatch[1])
-	}
-	let searchWithoutFilter = trimmed.replace(/^#[a-zA-Z0-9_]+\s*/, "").trim()
-	if (searchWithoutFilter) {
-		terms.push(searchWithoutFilter)
-	}
-	return terms
-}
-
-describe("extractSearchTerms", () => {
-	test("extracts hashtag and search term from combined query", () => {
-		expect(extractSearchTerms("#family mom")).toEqual(["#family", "mom"])
-	})
-
-	test("extracts only search term when no hashtag", () => {
-		expect(extractSearchTerms("mom")).toEqual(["mom"])
-	})
-
-	test("extracts only hashtag when no search term", () => {
-		expect(extractSearchTerms("#family")).toEqual(["#family"])
-	})
-
-	test("handles hashtag with extra spaces", () => {
-		expect(extractSearchTerms("#family   mom")).toEqual(["#family", "mom"])
-	})
-
-	test("handles multi-word search term", () => {
-		expect(extractSearchTerms("#work project manager")).toEqual([
-			"#work",
-			"project manager",
-		])
-	})
-
-	test("returns empty array for empty query", () => {
-		expect(extractSearchTerms("")).toEqual([])
-	})
-
-	test("returns empty array for whitespace only", () => {
-		expect(extractSearchTerms("   ")).toEqual([])
-	})
-
-	test("handles hashtag with numbers", () => {
-		expect(extractSearchTerms("#family2023 reunion")).toEqual([
-			"#family2023",
-			"reunion",
-		])
-	})
-
-	test("handles hashtag with underscores", () => {
-		expect(extractSearchTerms("#best_friends party")).toEqual([
-			"#best_friends",
-			"party",
-		])
-	})
-
-	test("only extracts first hashtag as filter", () => {
-		expect(extractSearchTerms("#family #friends mom")).toEqual([
-			"#family",
-			"#friends mom",
-		])
-	})
-
-	test("handles case sensitivity in hashtag", () => {
-		expect(extractSearchTerms("#Family mom")).toEqual(["#Family", "mom"])
-	})
-
-	test("handles trailing whitespace", () => {
-		expect(extractSearchTerms("#family mom  ")).toEqual(["#family", "mom"])
-	})
-
-	test("handles leading whitespace", () => {
-		expect(extractSearchTerms("  #family mom")).toEqual(["#family", "mom"])
-	})
-
-	test("trims search term properly", () => {
-		expect(extractSearchTerms("#work  project  ")).toEqual(["#work", "project"])
-	})
+test("extractSearchTerms", () => {
+	let cases: [string, Parameters<typeof extractSearchTerms>][] = [
+		["extracts hashtag and search term from combined query", ["#family mom"]],
+		["extracts only search term when no hashtag", ["mom"]],
+		["extracts only hashtag when no search term", ["#family"]],
+		["handles hashtag with extra spaces", ["#family   mom"]],
+		["handles multi-word search term", ["#work project manager"]],
+		["returns empty array for empty query", [""]],
+		["returns empty array for whitespace only", ["   "]],
+		["handles hashtag with numbers", ["#family2023 reunion"]],
+		["handles hashtag with underscores", ["#best_friends party"]],
+		["only extracts first hashtag as filter", ["#family #friends mom"]],
+		["handles case sensitivity in hashtag", ["#Family mom"]],
+		["handles trailing whitespace", ["#family mom  "]],
+		["handles leading whitespace", ["  #family mom"]],
+		["trims search term properly", ["#work  project  "]],
+	]
+	let table = cases.map(
+		([label, args]) =>
+			`${label}: ${JSON.stringify(args)} -> ${JSON.stringify(extractSearchTerms(...args))}`,
+	)
+	expect(table).toMatchInlineSnapshot(`
+		[
+		  "extracts hashtag and search term from combined query: ["#family mom"] -> ["#family","mom"]",
+		  "extracts only search term when no hashtag: ["mom"] -> ["mom"]",
+		  "extracts only hashtag when no search term: ["#family"] -> ["#family"]",
+		  "handles hashtag with extra spaces: ["#family   mom"] -> ["#family","mom"]",
+		  "handles multi-word search term: ["#work project manager"] -> ["#work","project manager"]",
+		  "returns empty array for empty query: [""] -> []",
+		  "returns empty array for whitespace only: ["   "] -> []",
+		  "handles hashtag with numbers: ["#family2023 reunion"] -> ["#family2023","reunion"]",
+		  "handles hashtag with underscores: ["#best_friends party"] -> ["#best_friends","party"]",
+		  "only extracts first hashtag as filter: ["#family #friends mom"] -> ["#family","#friends mom"]",
+		  "handles case sensitivity in hashtag: ["#Family mom"] -> ["#Family","mom"]",
+		  "handles trailing whitespace: ["#family mom  "] -> ["#family","mom"]",
+		  "handles leading whitespace: ["  #family mom"] -> ["#family","mom"]",
+		  "trims search term properly: ["#work  project  "] -> ["#work","project"]",
+		]
+	`)
 })

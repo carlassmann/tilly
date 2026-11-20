@@ -10,10 +10,11 @@
 
 import { useAccount } from "jazz-tools/react"
 import { useEffect, useMemo } from "react"
-import { UserAccount, isDeleted } from "#shared/schema/user"
+import type { co } from "jazz-tools"
+import { Person, UserAccount, isDeleted } from "#shared/schema/user"
 import { syncRemindersToServiceWorker } from "#app/lib/service-worker"
 
-export { useSyncRemindersToServiceWorker }
+export { useSyncRemindersToServiceWorker, extractRemindersForSync }
 
 let remindersQuery = {
 	root: {
@@ -31,14 +32,7 @@ function useSyncRemindersToServiceWorker() {
 
 	let remindersKey = useMemo(() => {
 		if (!me.$isLoaded) return null
-		let reminders: { id: string; dueAtDate: string }[] = []
-		for (let person of me.root.people.values()) {
-			if (!person?.reminders || isDeleted(person)) continue
-			for (let reminder of person.reminders.values()) {
-				if (!reminder || reminder.done || isDeleted(reminder)) continue
-				reminders.push({ id: reminder.$jazz.id, dueAtDate: reminder.dueAtDate })
-			}
-		}
+		let reminders = extractRemindersForSync(me.root.people.values())
 		reminders.sort((a, b) => a.id.localeCompare(b.id))
 		return JSON.stringify(reminders)
 	}, [me])
@@ -60,4 +54,21 @@ function useSyncRemindersToServiceWorker() {
 			.slice(0, 10)
 		syncRemindersToServiceWorker(jazzUserId, reminders, todayStr)
 	}, [me, remindersKey, timezone])
+}
+
+function extractRemindersForSync(
+	people: Iterable<co.loaded<
+		typeof Person,
+		{ reminders: { $each: true } }
+	> | null>,
+) {
+	let reminders: { id: string; dueAtDate: string }[] = []
+	for (let person of people) {
+		if (!person?.reminders || isDeleted(person)) continue
+		for (let reminder of person.reminders.values()) {
+			if (!reminder || reminder.done || isDeleted(reminder)) continue
+			reminders.push({ id: reminder.$jazz.id, dueAtDate: reminder.dueAtDate })
+		}
+	}
+	return reminders
 }

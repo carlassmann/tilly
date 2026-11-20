@@ -1,3 +1,4 @@
+import { extractSearchTerms } from "#shared/lib/search-terms"
 import { Markdown } from "#shared/ui/markdown"
 
 export { MarkdownWithHighlight }
@@ -32,15 +33,6 @@ function MarkdownWithHighlight({
 		.join("")
 
 	return <Markdown>{highlighted}</Markdown>
-}
-
-function extractSearchTerms(query: string): string[] {
-	let terms: string[] = []
-	let hashtagMatch = query.match(/^(#[a-zA-Z0-9_]+)\s*/)
-	if (hashtagMatch) terms.push(hashtagMatch[1])
-	let rest = query.replace(/^#[a-zA-Z0-9_]+\s*/, "").trim()
-	if (rest) terms.push(rest)
-	return terms
 }
 
 function escapeRegExp(s: string) {

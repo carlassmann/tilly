@@ -59,17 +59,26 @@ async function ensureInactiveLists(person: co.loaded<typeof Person>) {
 }
 
 describe("isStale", () => {
-	test("returns true for dates older than 30 days", () => {
-		expect(isStale(daysAgo(31))).toBe(true)
-		expect(isStale(daysAgo(60))).toBe(true)
-	})
-
-	test("returns false for dates within 30 days", () => {
-		expect(isStale(daysAgo(29))).toBe(false)
-		expect(isStale(daysAgo(0))).toBe(false)
-		expect(isStale(new Date())).toBe(false)
+	test("is true only for dates older than 30 days", () => {
+		let table = [
+			...[60, 31, 29, 0].map(
+				days => `${days} days ago -> ${isStale(daysAgo(days))}`,
+			),
+			`now -> ${isStale(new Date())}`,
+		]
+		expect(table).toMatchInlineSnapshot(`
+			[
+			  "60 days ago -> true",
+			  "31 days ago -> true",
+			  "29 days ago -> false",
+			  "0 days ago -> false",
+			  "now -> false",
+			]
+		`)
 	})
 })
+
+type Item = { $jazz: { id: string }; content?: string; text?: string }
 
 describe("cleanupInactiveLists", () => {
 	let owner: co.loaded<typeof UserAccount>
@@ -78,139 +87,80 @@ describe("cleanupInactiveLists", () => {
 		owner = await createAccount({ isCurrentActive: true })
 	})
 
-	test("moves soft-deleted person from active to inactivePeople", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		person.$jazz.set("deletedAt", daysAgo(1))
+	async function runCleanup() {
+		await cleanupInactiveLists(await loadForCleanup(owner))
+	}
 
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
+	test("moves soft-deleted people to inactivePeople and leaves active ones", async () => {
+		await seedPerson(owner, { name: "Active" })
+		let deleted = await seedPerson(owner, { name: "Ada" })
+		deleted.$jazz.set("deletedAt", daysAgo(1))
 
-		let after = await owner.$jazz.ensureLoaded({
+		await runCleanup()
+
+		let { root } = await owner.$jazz.ensureLoaded({
 			resolve: {
-				root: {
-					people: { $each: true },
-					inactivePeople: { $each: true },
-				},
+				root: { people: { $each: true }, inactivePeople: { $each: true } },
 			},
 		})
-		expect(after.root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(
-			false,
-		)
 		expect(
-			after.root.inactivePeople?.some(p => p?.$jazz.id === person.$jazz.id),
-		).toBe(true)
+			`people: ${root.people.map(p => p.name)} | inactive: ${root.inactivePeople?.map(p => p.name)}`,
+		).toMatchInlineSnapshot(`"people: Active | inactive: Ada"`)
 	})
 
-	test("leaves active people untouched", async () => {
-		let person = await seedPerson(owner, { name: "Active" })
-
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
-
-		let after = await owner.$jazz.ensureLoaded({
-			resolve: { root: { people: { $each: true } } },
-		})
-		expect(after.root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(
-			true,
-		)
-	})
-
-	test("moves deleted note from notes to inactiveNotes", async () => {
+	test("moves deleted notes and deleted or done reminders to inactive lists", async () => {
 		let person = await seedPerson(owner, { name: "Ada" })
 		await ensureInactiveLists(person)
-		let note = await seedNote(person, {
-			content: "to delete",
-			deletedAt: daysAgo(1),
-		})
+		let seeded = [
+			await seedNote(person, { content: "active note" }),
+			await seedNote(person, { content: "to delete", deletedAt: daysAgo(1) }),
+			await seedReminder(person, {
+				text: "active task",
+				dueAtDate: "2025-12-01",
+			}),
+			await seedReminder(person, {
+				text: "old task",
+				dueAtDate: "2025-01-01",
+				deletedAt: daysAgo(1),
+			}),
+			await seedReminder(person, {
+				text: "done task",
+				dueAtDate: "2025-01-01",
+				done: true,
+			}),
+		]
+		let seededIds = new Set(seeded.map(item => item.$jazz.id))
 
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
+		await runCleanup()
 
 		let after = await person.$jazz.ensureLoaded({
 			resolve: {
 				notes: { $each: true },
 				inactiveNotes: { $each: true },
-			},
-		})
-		expect(after.notes.some(n => n?.$jazz.id === note.$jazz.id)).toBe(false)
-		expect(after.inactiveNotes?.some(n => n?.$jazz.id === note.$jazz.id)).toBe(
-			true,
-		)
-	})
-
-	test("moves deleted reminder from reminders to inactiveReminders", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		await ensureInactiveLists(person)
-		let reminder = await seedReminder(person, {
-			text: "old task",
-			dueAtDate: "2025-01-01",
-			deletedAt: daysAgo(1),
-		})
-
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
-
-		let after = await person.$jazz.ensureLoaded({
-			resolve: {
 				reminders: { $each: true },
 				inactiveReminders: { $each: true },
 			},
 		})
-		expect(after.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			false,
-		)
-		expect(
-			after.inactiveReminders?.some(r => r?.$jazz.id === reminder.$jazz.id),
-		).toBe(true)
-	})
-
-	test("moves done reminder to inactiveReminders", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		await ensureInactiveLists(person)
-		let reminder = await seedReminder(person, {
-			text: "done task",
-			dueAtDate: "2025-01-01",
-			done: true,
-		})
-
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
-
-		let after = await person.$jazz.ensureLoaded({
-			resolve: {
-				reminders: { $each: true },
-				inactiveReminders: { $each: true },
-			},
-		})
-		expect(after.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			false,
-		)
-		expect(
-			after.inactiveReminders?.some(r => r?.$jazz.id === reminder.$jazz.id),
-		).toBe(true)
-	})
-
-	test("keeps active notes and reminders in their lists", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		await ensureInactiveLists(person)
-		let note = await seedNote(person, { content: "active note" })
-		let reminder = await seedReminder(person, {
-			text: "active task",
-			dueAtDate: "2025-12-01",
-		})
-
-		let loaded = await loadForCleanup(owner)
-		await cleanupInactiveLists(loaded)
-
-		let after = await person.$jazz.ensureLoaded({
-			resolve: {
-				notes: { $each: true },
-				reminders: { $each: true },
-			},
-		})
-		expect(after.notes.some(n => n?.$jazz.id === note.$jazz.id)).toBe(true)
-		expect(after.reminders.some(r => r?.$jazz.id === reminder.$jazz.id)).toBe(
-			true,
-		)
+		// A copy would lose the original's id and the links pointing to it.
+		let describeItems = (items: readonly Item[] | undefined) =>
+			items
+				?.map(
+					i =>
+						`${i.content ?? i.text}${seededIds.has(i.$jazz.id) ? "" : " (copy)"}`,
+				)
+				.join(", ")
+		expect([
+			`notes: ${describeItems(after.notes)}`,
+			`inactiveNotes: ${describeItems(after.inactiveNotes)}`,
+			`reminders: ${describeItems(after.reminders)}`,
+			`inactiveReminders: ${describeItems(after.inactiveReminders)}`,
+		]).toMatchInlineSnapshot(`
+			[
+			  "notes: active note",
+			  "inactiveNotes: to delete",
+			  "reminders: active task",
+			  "inactiveReminders: done task, old task",
+			]
+		`)
 	})
 })

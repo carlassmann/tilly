@@ -8,6 +8,9 @@ import onlyScreensAndWidgetsMayImportParts from "./rules/only-screens-and-widget
 import onlyRoutesMayImportScreens from "./rules/only-routes-may-import-screens.js"
 import onlyRouterMayImportHandlers from "./rules/only-router-may-import-handlers.js"
 import onlyHandlersMayImportOperations from "./rules/only-handlers-may-import-operations.js"
+import expectTestsOnly from "./rules/expect-tests-only.js"
+import expectTestsNoBooleans from "./rules/expect-tests-no-booleans.js"
+import expectTestsProcessor from "./processors/expect-tests.js"
 const plugin = {
 	meta: {
 		name: "eslint-plugin-architecture",
@@ -25,6 +28,11 @@ const plugin = {
 		"only-routes-may-import-screens": onlyRoutesMayImportScreens,
 		"only-router-may-import-handlers": onlyRouterMayImportHandlers,
 		"only-handlers-may-import-operations": onlyHandlersMayImportOperations,
+		"expect-tests-only": expectTestsOnly,
+		"expect-tests-no-booleans": expectTestsNoBooleans,
+	},
+	processors: {
+		"expect-tests": expectTestsProcessor,
 	},
 }
 export default plugin

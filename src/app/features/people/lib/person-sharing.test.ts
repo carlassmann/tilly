@@ -11,7 +11,12 @@ import {
 	removeInviteGroup,
 } from "./person-sharing"
 import { parseInviteHash } from "./invite"
-import { createAccount, seedPerson } from "#shared/tools/test-helpers"
+import {
+	createAccount,
+	redactNoise,
+	seedPerson,
+	requireLoaded,
+} from "#shared/tools/test-helpers"
 import { updatePerson } from "#shared/tools/person-update"
 
 let BASE_URL = "http://test.invalid/app/invite"
@@ -44,66 +49,88 @@ describe("Person sharing", () => {
 		owner = await createAccount({ isCurrentActive: true })
 	})
 
+	async function createInvite(person: co.loaded<typeof Person>) {
+		let full = await loadFullPerson(person)
+		return parseInviteLink(
+			await createPersonInviteLink(full, owner.$jazz.id, BASE_URL),
+		)
+	}
+
+	async function signUpInvitee() {
+		await owner.$jazz.waitForAllCoValuesSync()
+		let invitee = await createAccount()
+		setActiveAccount(invitee)
+		let loadedInvitee = await invitee.$jazz.ensureLoaded({
+			resolve: { root: { people: true } },
+		})
+		return { invitee, loadedInvitee }
+	}
+
+	async function loadInviteePeople(invitee: co.loaded<typeof UserAccount>) {
+		let { root } = await invitee.$jazz.ensureLoaded({
+			resolve: { root: { people: { $each: true } } },
+		})
+		return root.people
+	}
+
 	describe("createPersonInviteLink", () => {
 		test("emits the canonical invite URL format", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
 			let full = await loadFullPerson(person)
 
 			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			expect(link).toMatch(
-				new RegExp(
-					`^${BASE_URL.replace(/\./g, "\\.")}#/person/co_[^/]+/invite/co_[^/]+/inviteSecret_`,
-				),
+			let [personId, ...path] = redactNoise([
+				person.$jazz.id,
+				...link.replace(/inviteSecret_\w+/, "inviteSecret_<secret>").split("/"),
+			])
+			expect(`person ${personId}: ${path.join("/")}`).toMatchInlineSnapshot(
+				`"person <id:1>: http://test.invalid/app/invite#/person/<id:1>/invite/<id:2>/inviteSecret_<secret>"`,
 			)
 		})
 
 		test("parsed invite resolves to the original personId", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			expect(parsed.personId).toBe(person.$jazz.id)
+			let parsed = await createInvite(person)
+			expect(
+				redactNoise({ original: person.$jazz.id, parsed: parsed.personId }),
+			).toMatchInlineSnapshot(`
+				{
+				  "original": "<id:1>",
+				  "parsed": "<id:1>",
+				}
+			`)
 		})
 	})
 
 	describe("acceptPersonInvite", () => {
 		test("invitee gains access and the person is pushed to their root.people", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
-			expect(result.status).toBe("accepted")
-
-			let after = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: { $each: true } } },
-			})
-			expect(after.root.people.some(p => p?.$jazz.id === person.$jazz.id)).toBe(
-				true,
-			)
+			let people = await loadInviteePeople(invitee)
+			expect(
+				redactNoise({
+					status: result.status,
+					shared: person.$jazz.id,
+					inviteePeople: people.map(p => p?.$jazz.id),
+				}),
+			).toMatchInlineSnapshot(`
+				{
+				  "inviteePeople": [
+				    "<id:1>",
+				  ],
+				  "shared": "<id:1>",
+				  "status": "accepted",
+				}
+			`)
 		})
 
 		test("invitee can edit the shared person (writer role grants write access)", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 
 			await updatePerson(invitee, {
@@ -114,55 +141,49 @@ describe("Person sharing", () => {
 
 			setActiveAccount(owner)
 			let reloaded = await Person.load(person.$jazz.id)
-			expect(reloaded?.$isLoaded ? reloaded.name : null).toBe("Ada by invitee")
+			expect(reloaded?.$isLoaded ? reloaded.name : null).toMatchInlineSnapshot(
+				`"Ada by invitee"`,
+			)
 		})
 
 		test("accepting twice is idempotent (already-member, no duplicate in list)", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 
 			let first = await acceptPersonInvite(loadedInvitee, parsed)
 			let second = await acceptPersonInvite(loadedInvitee, parsed)
 
-			expect(first.status).toBe("accepted")
-			expect(second.status).toBe("already-member")
-
-			let after = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: { $each: true } } },
-			})
-			let matches = after.root.people.filter(
-				p => p?.$jazz.id === person.$jazz.id,
-			)
-			expect(matches.length).toBe(1)
+			let people = await loadInviteePeople(invitee)
+			expect(
+				redactNoise({
+					statuses: [first.status, second.status],
+					shared: person.$jazz.id,
+					inviteePeople: people.map(p => p?.$jazz.id),
+				}),
+			).toMatchInlineSnapshot(`
+				{
+				  "inviteePeople": [
+				    "<id:1>",
+				  ],
+				  "shared": "<id:1>",
+				  "statuses": [
+				    "accepted",
+				    "already-member",
+				  ],
+				}
+			`)
 		})
 	})
 
 	describe("revocation", () => {
 		test("revoked invitee loses read access to the person", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let parsed = await createInvite(person)
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 
 			let visibleBefore = await Person.load(person.$jazz.id)
-			expect(visibleBefore?.$isLoaded).toBe(true)
 
 			setActiveAccount(owner)
 			removeInviteGroup(
@@ -173,46 +194,62 @@ describe("Person sharing", () => {
 
 			setActiveAccount(invitee)
 			let visibleAfter = await Person.load(person.$jazz.id)
-			expect(visibleAfter?.$jazz.loadingState).toBe("unauthorized")
+			expect(
+				`${visibleBefore?.$jazz.loadingState} -> ${visibleAfter?.$jazz.loadingState}`,
+			).toMatchInlineSnapshot(`"loaded -> unauthorized"`)
 		})
 	})
 
 	describe("getInviteGroupsWithMembers / getPendingInviteGroups", () => {
 		test("pending groups show accepted-but-empty invites; members appear after acceptance", async () => {
 			let person = await seedPerson(owner, { name: "Ada" })
-			let full = await loadFullPerson(person)
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
+			let parsed = await createInvite(person)
 
 			let pendingBefore = getPendingInviteGroups(person)
-			expect(pendingBefore.some(p => p.groupId === parsed.inviteGroupId)).toBe(
-				true,
-			)
-
 			let withMembersBefore = await getInviteGroupsWithMembers(person)
-			expect(withMembersBefore.length).toBe(0)
 
-			await owner.$jazz.waitForAllCoValuesSync()
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
+			let { invitee, loadedInvitee } = await signUpInvitee()
 			await acceptPersonInvite(loadedInvitee, parsed)
 			await invitee.$jazz.waitForAllCoValuesSync()
 
 			setActiveAccount(owner)
-			let reloadedPerson = await Person.load(person.$jazz.id)
-			if (!reloadedPerson?.$isLoaded) throw new Error("person gone")
+			let reloadedPerson = requireLoaded(
+				await Person.load(person.$jazz.id),
+				"person",
+			)
 			let withMembersAfter = await getInviteGroupsWithMembers(reloadedPerson)
 			expect(
-				withMembersAfter.some(g => g.groupId === parsed.inviteGroupId),
-			).toBe(true)
-			expect(
-				withMembersAfter
-					.find(g => g.groupId === parsed.inviteGroupId)
-					?.members.some(m => m.id === invitee.$jazz.id),
-			).toBe(true)
+				redactNoise({
+					inviteGroup: parsed.inviteGroupId,
+					invitee: invitee.$jazz.id,
+					pendingBefore: pendingBefore.map(p => p.groupId),
+					withMembersBefore,
+					withMembersAfter,
+				}),
+			).toMatchInlineSnapshot(`
+				{
+				  "inviteGroup": "<id:1>",
+				  "invitee": "<id:2>",
+				  "pendingBefore": [
+				    "<id:1>",
+				  ],
+				  "withMembersAfter": [
+				    {
+				      "createdAt": "<time>",
+				      "groupId": "<id:1>",
+				      "members": [
+				        {
+				          "id": "<id:2>",
+				          "inviteGroupId": "<id:1>",
+				          "name": "Anonymous",
+				          "role": "writer",
+				        },
+				      ],
+				    },
+				  ],
+				  "withMembersBefore": [],
+				}
+			`)
 		})
 	})
 
@@ -240,43 +277,47 @@ describe("Person sharing", () => {
 			return person
 		}
 
-		test("isGroupOwned reports false for account-owned persons", async () => {
-			let person = await seedAccountOwnedPerson(owner, "Legacy")
-			let full = await loadFullPerson(person)
-			expect(isGroupOwned(full)).toBe(false)
-		})
-
-		test("isGroupOwned reports true for group-owned persons", async () => {
-			let person = await seedPerson(owner, { name: "Modern" })
-			let full = await loadFullPerson(person)
-			expect(isGroupOwned(full)).toBe(true)
+		test("isGroupOwned is true only for group-owned persons", async () => {
+			let accountOwned = await seedAccountOwnedPerson(owner, "Legacy")
+			let groupOwned = await seedPerson(owner, { name: "Modern" })
+			expect({
+				accountOwned: isGroupOwned(await loadFullPerson(accountOwned)),
+				groupOwned: isGroupOwned(await loadFullPerson(groupOwned)),
+			}).toMatchInlineSnapshot(`
+				{
+				  "accountOwned": false,
+				  "groupOwned": true,
+				}
+			`)
 		})
 
 		test("inviting an account-owned person migrates it and yields a working link", async () => {
 			let original = await seedAccountOwnedPerson(owner, "Legacy")
-			let full = await loadFullPerson(original)
+			let parsed = await createInvite(original)
+			let migrated = requireLoaded(
+				await Person.load(parsed.personId),
+				"migrated person",
+			)
 
-			let link = await createPersonInviteLink(full, owner.$jazz.id, BASE_URL)
-			let parsed = parseInviteLink(link)
-
-			expect(parsed.personId).not.toBe(original.$jazz.id)
-
-			let migrated = await Person.load(parsed.personId)
-			expect(migrated?.$isLoaded).toBe(true)
-			if (!migrated?.$isLoaded) return
-			expect(migrated.name).toBe("Legacy")
-			expect(isGroupOwned(migrated)).toBe(true)
-
-			await owner.$jazz.waitForAllCoValuesSync()
-
-			let invitee = await createAccount()
-			setActiveAccount(invitee)
-			let loadedInvitee = await invitee.$jazz.ensureLoaded({
-				resolve: { root: { people: true } },
-			})
-
+			let { loadedInvitee } = await signUpInvitee()
 			let result = await acceptPersonInvite(loadedInvitee, parsed)
-			expect(result.status).toBe("accepted")
+			expect({
+				...redactNoise({
+					original: original.$jazz.id,
+					invited: parsed.personId,
+				}),
+				name: migrated.name,
+				groupOwned: isGroupOwned(migrated),
+				status: result.status,
+			}).toMatchInlineSnapshot(`
+				{
+				  "groupOwned": true,
+				  "invited": "<id:2>",
+				  "name": "Legacy",
+				  "original": "<id:1>",
+				  "status": "accepted",
+				}
+			`)
 		})
 	})
 })

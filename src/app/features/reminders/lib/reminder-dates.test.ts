@@ -1,6 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest"
-import type { co } from "jazz-tools"
-import { UserAccount } from "#shared/schema/user"
+import { expect, test } from "vitest"
 import {
 	createAccount,
 	seedPerson,
@@ -8,57 +6,33 @@ import {
 } from "#shared/tools/test-helpers"
 import { getReferenceDate, getDeletedDate } from "./reminder-dates"
 
-describe("getReferenceDate", () => {
-	let owner: co.loaded<typeof UserAccount>
-
-	beforeEach(async () => {
-		owner = await createAccount({ isCurrentActive: true })
+test("getReferenceDate and getDeletedDate", async () => {
+	let owner = await createAccount({ isCurrentActive: true })
+	let person = await seedPerson(owner, { name: "Ada" })
+	let createdAt = new Date("2025-01-01")
+	let updatedAt = new Date("2025-01-15")
+	let deleted = await seedReminder(person, {
+		text: "old",
+		dueAtDate: "2025-02-01",
+		deletedAt: new Date("2025-03-01"),
+		createdAt,
+		updatedAt,
 	})
-
-	test("returns updatedAt when present", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		let reminder = await seedReminder(person, {
-			text: "call",
-			dueAtDate: "2025-06-01",
-		})
-		let date = getReferenceDate(reminder)
-		expect(date).toEqual(reminder.updatedAt)
+	let active = await seedReminder(person, {
+		text: "active",
+		dueAtDate: "2025-06-01",
+		createdAt,
+		updatedAt,
 	})
-
-	test("returns a Date instance", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		let reminder = await seedReminder(person, {
-			text: "call",
-			dueAtDate: "2025-06-01",
-		})
-		expect(getReferenceDate(reminder)).toBeInstanceOf(Date)
-	})
-})
-
-describe("getDeletedDate", () => {
-	let owner: co.loaded<typeof UserAccount>
-
-	beforeEach(async () => {
-		owner = await createAccount({ isCurrentActive: true })
-	})
-
-	test("returns deletedAt when present", async () => {
-		let deletedAt = new Date("2025-03-01")
-		let person = await seedPerson(owner, { name: "Ada" })
-		let reminder = await seedReminder(person, {
-			text: "old",
-			dueAtDate: "2025-02-01",
-			deletedAt,
-		})
-		expect(getDeletedDate(reminder)).toEqual(deletedAt)
-	})
-
-	test("falls back to reference date when not deleted", async () => {
-		let person = await seedPerson(owner, { name: "Ada" })
-		let reminder = await seedReminder(person, {
-			text: "active",
-			dueAtDate: "2025-06-01",
-		})
-		expect(getDeletedDate(reminder)).toEqual(getReferenceDate(reminder))
-	})
+	expect({
+		referenceDateOfActive: getReferenceDate(active),
+		deletedDateOfDeleted: getDeletedDate(deleted),
+		deletedDateOfActive: getDeletedDate(active),
+	}).toMatchInlineSnapshot(`
+		{
+		  "deletedDateOfActive": 2025-01-15T00:00:00.000Z,
+		  "deletedDateOfDeleted": 2025-03-01T00:00:00.000Z,
+		  "referenceDateOfActive": 2025-01-15T00:00:00.000Z,
+		}
+	`)
 })
