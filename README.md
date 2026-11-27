@@ -113,12 +113,20 @@ production environment. Do not commit environment files.
 
 The scheduled handler invokes the existing authenticated notification route.
 Staging deliberately has no cron trigger: Vercel still runs the hourly job.
-Before production cutover, attach the domain, connect automatic builds and
-verify sign-in/chat. Disable the Vercel cron, then enable `0 * * * *` in the
-production Worker's triggers. Keep Vercel available for rollback. Never enable
-both schedulers together.
+Production uses `wrangler.production.jsonc` on the same Worker after staging
+verification. It attaches only the apex and `www` routes. The apex redirects to
+`www` with HTTP 307, preserving paths and queries. Keep the wildcard and Clerk
+DNS records unchanged.
 
-written with GPT-6 in Codex (T3 Code)
+GitHub `main` builds automatically in Cloudflare. Set the deploy command to
+`bunx wrangler deploy --config wrangler.production.jsonc` after verifying sign-in
+and chat. The default command continues to deploy staging until then.
+
+Disable the Vercel cron before adding `0 * * * *` to the production Wrangler
+configuration. Keep Vercel available for rollback. Never enable both schedulers
+together.
+
+written with gpt-6.1-sol in Codex (T3 Code)
 
 ## License
 

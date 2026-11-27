@@ -13,6 +13,10 @@ function createExports(manifest: SSRManifest) {
 	let astro = createAstroExports(manifest).default
 	let fetch: WorkerFetch = async (request, environment, context) => {
 		let url = new URL(request.url)
+		if (url.hostname === "tilly.social") {
+			url.hostname = "www.tilly.social"
+			return Response.redirect(url, 307)
+		}
 		if (url.pathname === "/app" || url.pathname.startsWith("/app/")) {
 			url.pathname = "/app/"
 			return environment.ASSETS.fetch(url.href)
