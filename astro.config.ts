@@ -5,10 +5,19 @@ import tailwindcss from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 
 import vercel from "@astrojs/vercel"
+import cloudflare from "@astrojs/cloudflare"
 import node from "@astrojs/node"
 
 let useNodeAdapter = process.env.ASTRO_ADAPTER === "node"
-let runtimeAdapter = useNodeAdapter ? node({ mode: "standalone" }) : vercel()
+let runtimeAdapter = useNodeAdapter
+	? node({ mode: "standalone" })
+	: process.env.ASTRO_ADAPTER === "cloudflare"
+		? cloudflare({
+				imageService: "compile",
+				platformProxy: { enabled: false },
+				workerEntryPoint: { path: "./src/server/cloudflare.ts" },
+			})
+		: vercel()
 
 // `work` serves the dev server on per-workspace URLs (e.g. over the tailnet)
 // and passes them in WORK_URLS.
