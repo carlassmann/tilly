@@ -1,5 +1,7 @@
 .astro
 .vercel
+.wrangler/
+.dev.vars*
 .tanstack
 .claude
 

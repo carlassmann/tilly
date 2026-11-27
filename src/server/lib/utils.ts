@@ -1,5 +1,6 @@
 import { startWorker } from "jazz-tools/worker"
 import { co } from "jazz-tools"
+import { requestWorkers, openRequestWorker } from "./request-workers"
 
 import {
 	PUBLIC_JAZZ_SYNC_SERVER,
@@ -26,6 +27,23 @@ let cachedServerWorker: ServerWorker | null = null
 let serverWorkerPromise: Promise<ServerWorker> | null = null
 
 async function getServerWorker(): Promise<ServerWorker> {
+	let scope = requestWorkers.getStore()
+	if (scope) {
+		scope.serverWorker ??= openRequestWorker(
+			scope,
+			PUBLIC_JAZZ_SYNC_SERVER,
+			peer =>
+				startWorker({
+					AccountSchema: ServerAccount,
+					peer,
+					accountID: PUBLIC_JAZZ_WORKER_ACCOUNT,
+					accountSecret: JAZZ_WORKER_SECRET,
+					skipInboxLoad: true,
+					asActiveAccount: false,
+				}),
+		)
+		return scope.serverWorker
+	}
 	if (cachedServerWorker) {
 		return cachedServerWorker
 	}
@@ -88,6 +106,19 @@ function getUserWorker(user: {
 	return async () => {
 		let jazzAccountId = user.unsafeMetadata.jazzAccountID as string
 		let jazzAccountSecret = user.unsafeMetadata.jazzAccountSecret as string
+		let scope = requestWorkers.getStore()
+		if (scope) {
+			return openRequestWorker(scope, PUBLIC_JAZZ_SYNC_SERVER, peer =>
+				startWorker({
+					AccountSchema: UserAccount,
+					peer,
+					accountID: jazzAccountId,
+					accountSecret: jazzAccountSecret,
+					skipInboxLoad: true,
+					asActiveAccount: false,
+				}),
+			)
+		}
 
 		let timeoutPromise = new Promise<never>((_, reject) =>
 			setTimeout(() => reject(new WorkerTimeoutError()), 30000),

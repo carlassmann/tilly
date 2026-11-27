@@ -100,6 +100,26 @@ Feel free to file Issues to suggest features or report bugs. PR's are welcome!
 
 Report suspected vulnerabilities privately by emailing [assmann@hey.com](mailto:assmann@hey.com) or DM to @ccssmnn on X; please avoid filing public issues until I respond.
 
+## Cloudflare hosting
+
+`bun run build:cloudflare` selects the Cloudflare adapter; other builds retain
+the existing Vercel or Node adapter. `bun run deploy:cloudflare` deploys staging:
+https://tilly-migration.assmann-568.workers.dev.
+
+The Worker preserves app deep links and the Plausible proxy. Jazz workers belong
+to one request and stay open until streaming chat ends or is cancelled. Server
+credentials stay in Worker secrets; public build settings come from the existing
+production environment. Do not commit environment files.
+
+The scheduled handler invokes the existing authenticated notification route.
+Staging deliberately has no cron trigger: Vercel still runs the hourly job.
+Before production cutover, attach the domain, connect automatic builds and
+verify sign-in/chat. Disable the Vercel cron, then enable `0 * * * *` in the
+production Worker's triggers. Keep Vercel available for rollback. Never enable
+both schedulers together.
+
+written with GPT-6 in Codex (T3 Code)
+
 ## License
 
 MIT License - See LICENSE file for details.
