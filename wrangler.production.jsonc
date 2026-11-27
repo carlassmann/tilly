@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "tilly-migration",
+	"account_id": "568edba45e81a5b744aecae456748db4",
+	"main": "dist/_worker.js/index.js",
+	"compatibility_date": "2026-11-25",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": true,
+	"preview_urls": false,
+	"routes": [
+		{ "pattern": "tilly.social/*", "zone_name": "tilly.social" },
+		{ "pattern": "www.tilly.social/*", "zone_name": "tilly.social" },
+	],
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"run_worker_first": true,
+	},
+}
