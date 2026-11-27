@@ -42,8 +42,9 @@ function createExports(manifest: SSRManifest) {
 			if (clientAddress) forwarded.headers.set("X-Forwarded-For", clientAddress)
 			return globalThis.fetch(new Request(forwarded, { redirect: "manual" }))
 		}
-		return runWithRequestWorkers(() =>
-			astro.fetch(request, environment, context),
+		return runWithRequestWorkers(
+			() => astro.fetch(request, environment, context),
+			task => context.waitUntil(task),
 		)
 	}
 	async function scheduled() {

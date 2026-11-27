@@ -3,10 +3,23 @@ import { WebSocketPeerWithReconnection } from "cojson-transport-ws"
 import type { Peer } from "jazz-tools"
 import type { ServerWorker, UserWorker } from "./utils"
 
-export { runWithRequestWorkers, requestWorkers, openRequestWorker }
+export {
+	runWithRequestWorkers,
+	runWithRequestWorkerTask,
+	requestWorkers,
+	openRequestWorker,
+}
 
-async function runWithRequestWorkers(operation: () => Promise<Response>) {
-	let scope: WorkerScope = { cleanups: new Set(), finished: false }
+async function runWithRequestWorkers(
+	operation: () => Promise<Response>,
+	waitUntil?: (task: Promise<unknown>) => void,
+) {
+	let scope: WorkerScope = {
+		cleanups: new Set(),
+		tasks: new Set(),
+		finished: false,
+		waitUntil,
+	}
 	return requestWorkers.run(scope, async () => {
 		try {
 			let response = await operation()
@@ -42,6 +55,19 @@ async function runWithRequestWorkers(operation: () => Promise<Response>) {
 			throw error
 		}
 	})
+}
+
+async function runWithRequestWorkerTask<T>(operation: () => Promise<T>) {
+	let scope = requestWorkers.getStore()
+	if (!scope) return operation()
+	let task = Promise.resolve().then(operation)
+	scope.tasks.add(task)
+	scope.waitUntil?.(task)
+	try {
+		return await task
+	} finally {
+		scope.tasks.delete(task)
+	}
 }
 
 async function openRequestWorker<Worker extends ServerWorker | UserWorker>(
@@ -114,15 +140,21 @@ async function openRequestWorker<Worker extends ServerWorker | UserWorker>(
 }
 
 async function finishWorkers(scope: WorkerScope) {
-	if (scope.finished) return
-	scope.finished = true
-	await Promise.allSettled([...scope.cleanups].map(cleanup => cleanup()))
-	scope.cleanups.clear()
+	scope.finishing ??= (async () => {
+		await Promise.allSettled([...scope.tasks])
+		scope.finished = true
+		await Promise.allSettled([...scope.cleanups].map(cleanup => cleanup()))
+		scope.cleanups.clear()
+	})()
+	await scope.finishing
 }
 
 type WorkerScope = {
 	serverWorker?: Promise<ServerWorker>
 	cleanups: Set<() => Promise<void>>
+	tasks: Set<Promise<unknown>>
+	waitUntil?: (task: Promise<unknown>) => void
+	finishing?: Promise<void>
 	finished: boolean
 }
 

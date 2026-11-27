@@ -1,5 +1,9 @@
 import { expect, test } from "vitest"
-import { requestWorkers, runWithRequestWorkers } from "./request-workers"
+import {
+	requestWorkers,
+	runWithRequestWorkers,
+	runWithRequestWorkerTask,
+} from "./request-workers"
 
 test("streaming keeps workers until the body ends, then releases them", async () => {
 	let events: string[] = []
@@ -84,6 +88,42 @@ test("overlapping requests keep their worker scopes separate", async () => {
 		  "second closed",
 		  "second consumed",
 		  "first closed",
+		]
+	`)
+})
+
+test("disconnect waits for generation to finish before closing workers", async () => {
+	let events: string[] = []
+	let finishGeneration = () => {}
+	let generation = new Promise<void>(resolve => {
+		finishGeneration = resolve
+	})
+	let pending: Promise<unknown>[] = []
+	let response = await runWithRequestWorkers(
+		async () => {
+			requestWorkers.getStore()?.cleanups.add(async () => {
+				events.push("closed")
+			})
+			void runWithRequestWorkerTask(async () => {
+				await generation
+				events.push("generation finished")
+			})
+			return new Response(new ReadableStream())
+		},
+		task => {
+			pending.push(task)
+		},
+	)
+	let cancelled = response.body?.cancel()
+	events.push("disconnected")
+	finishGeneration()
+	await cancelled
+	await Promise.all(pending)
+	expect(events).toMatchInlineSnapshot(`
+		[
+		  "disconnected",
+		  "generation finished",
+		  "closed",
 		]
 	`)
 })

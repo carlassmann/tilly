@@ -3,6 +3,7 @@ import { streamSSE } from "hono/streaming"
 import { authMiddleware, requireAuth, requirePlus } from "#server/features/auth"
 import { errorToStatus } from "#server/lib/errors"
 import { processChatMessage } from "../operations/process-chat-message"
+import { runWithRequestWorkerTask } from "#server/lib/request-workers"
 
 export { chatMessagesApp }
 
@@ -18,11 +19,13 @@ let chatMessagesApp = new Hono()
 
 		return result.match({
 			ok: ({ generate }) =>
-				streamSSE(c, async stream => {
-					await stream.writeSSE({ data: "generation-started" })
-					await generate()
-					await stream.writeSSE({ data: "generation-finished" })
-				}),
+				streamSSE(c, stream =>
+					runWithRequestWorkerTask(async () => {
+						await stream.writeSSE({ data: "generation-started" })
+						await generate()
+						await stream.writeSSE({ data: "generation-finished" })
+					}),
+				),
 			err: e => c.json({ error: e.message, code: e._tag }, errorToStatus(e)),
 		})
 	})
